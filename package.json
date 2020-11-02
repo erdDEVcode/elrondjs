@@ -1,6 +1,6 @@
 {
   "name": "erdor",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Javascript SDK for the Elrond blockchain",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

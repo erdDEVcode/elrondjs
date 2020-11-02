@@ -29,5 +29,6 @@ module.exports = {
             "prepareCmd": "npm run build",
         }],
         "@semantic-release/npm",
+        "@semantic-release/git"
     ]
 }

@@ -26,6 +26,9 @@ module.exports = {
             "changelogFile": "CHANGELOG.md"
         }],
         "@semantic-release/npm",
-        "@semantic-release/git"
+        "@semantic-release/git",
+        ["@semantic-release/exec", {
+            "successCmd": "git push"
+        }],        
     ]
 }

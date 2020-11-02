@@ -11,6 +11,7 @@ export interface Account {
   address: string,
   balance: string,
   nonce: number,
+  code: string,
   readOnly?: boolean,
 }
 
@@ -21,14 +22,14 @@ export enum ContractValueType {
   QUERY = 'query',
 }
 
-export interface GetContractValueParams {
+export interface ContractQueryParams {
   contractAddress: string,
   functionName: string,
-  args: [string],
+  args: string[],
   valueType: ContractValueType,
 }
 
-export type GetContractValueResult = string | [string]
+export type ContractQueryResult = string | string[]
 
 export interface Transaction {
   sender: string,
@@ -72,11 +73,9 @@ export interface TransactionOnChain extends Transaction {
 export interface Provider {
   getNetworkConfig: () => Promise<NetworkConfig>,
   getAccount: (address: string) => Promise<Account>,
-  getCode: (address: string) => Promise<string>,
-  getContractValue: (params: GetContractValueParams) => Promise<GetContractValueResult>,
-  estimateGasLimit: (tx: Transaction) => Promise<number>,
-  signAndSendTransaction: (tx: Transaction) => Promise<TransactionReceipt>,
+  queryContract: (params: ContractQueryParams) => Promise<ContractQueryResult>,
   sendSignedTransaction: (signedTx: SignedTransaction) => Promise<TransactionReceipt>,
+  signAndSendTransaction: (tx: Transaction) => Promise<TransactionReceipt>,
   getTransaction: (txHash: string) => Promise<TransactionOnChain>,
 }
 

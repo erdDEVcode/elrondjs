@@ -1,7 +1,7 @@
 {
   "name": "erdor",
   "version": "1.0.0",
-  "description": "Javascript SDK for Elrond blockchain",
+  "description": "Javascript SDK for the Elrond blockchain",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "author": "erdDEV team (https://erd.dev)",
@@ -21,6 +21,7 @@
   },
   "scripts": {
     "prepublishOnly": "npm run build",
+    "release": "semantic-release",
     "build": "tsc"
   },
   "husky": {

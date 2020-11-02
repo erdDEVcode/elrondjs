@@ -1,0 +1,31 @@
+{
+  "name": "erdor",
+  "version": "1.0.0",
+  "description": "Javascript SDK for Elrond blockchain",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "author": "erdDEV team (https://erd.dev)",
+  "homepage": "https://erdor.erd.dev",
+  "license": "AGPLv3",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/erdDEVcode/erdor.git"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^9.1.2",
+    "@commitlint/config-conventional": "^9.1.2",
+    "@semantic-release/changelog": "^5.0.1",
+    "@semantic-release/exec": "^5.0.0",
+    "husky": "^4.3.0",
+    "typescript": "^4.0.5"
+  },
+  "scripts": {
+    "prepublishOnly": "npm run build",
+    "build": "tsc"
+  },
+  "husky": {
+    "hooks": {
+      "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
+    }
+  }
+}

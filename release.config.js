@@ -26,7 +26,9 @@ module.exports = {
             "changelogFile": "CHANGELOG.md"
         }],
         "@semantic-release/npm",
-        "@semantic-release/git",
+        ["@semantic-release/git", {
+            "message": "chore(release): ${nextRelease.version}\n\n${nextRelease.notes}"
+        }],
         ["@semantic-release/exec", {
             "successCmd": "git push"
         }],        

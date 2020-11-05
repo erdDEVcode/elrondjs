@@ -15,21 +15,18 @@ export interface Account {
   readOnly?: boolean,
 }
 
-export enum ContractValueType {
-  STRING = 'string',
-  INT = 'int',
-  HEX = 'hex',
-  QUERY = 'query',
-}
-
 export interface ContractQueryParams {
   contractAddress: string,
   functionName: string,
   args: string[],
-  valueType: ContractValueType,
 }
 
-export type ContractQueryResult = string | string[]
+export type ContractQueryResult = {
+  returnData: string[],
+  returnCode: string,
+  gasRefund: number,
+  gasRemaining: number,
+}
 
 export interface Transaction {
   sender: string,
@@ -38,6 +35,7 @@ export interface Transaction {
   gasPrice?: number,
   gasLimit?: number,
   data?: string,
+  meta?: object,
 }
 
 export interface SignedTransaction extends Transaction {
@@ -53,20 +51,22 @@ export interface TransactionReceipt {
 }
 
 export enum TransactionStatus {
+  PENDING = 0,
   SUCCESS = 1,
   FAILURE,
 }
 
 export interface TransactionOnChain extends Transaction {
   raw: object,
-  gasUsed: number,
-  id: string,
-  miniBlockHash: string,
+  epoch: number,
   nonce: number
-  receiverShard: number,
   round: number,
-  senderShard: number,
+  gasPrice: number,
+  gasLimit: number,
+  destinationShard: number,
+  sourceShard: number,
   status: TransactionStatus,
+  signature: string,
   timestamp: Date,
 }
 
@@ -83,22 +83,48 @@ export interface ContractQueryOptions {
   provider?: Provider,
 }
 
-export interface ContractExecutionOptions {
-  sender: string,
+export interface ExecutionOptions {
+  sender?: string,
   value?: string,
   gasPrice?: number,
   gasLimit?: number,
   provider?: Provider,
+  meta?: object,
 }
 
 const joinArguments = (...args: string[]) => {
   return args.join('@')
 }
 
-abstract class ContractTransaction {
-  executionOptions?: ContractExecutionOptions
 
-  constructor(_options?: ContractExecutionOptions) {
+export const parseRawTransaction = (tx: any): TransactionOnChain => {
+  // status parsing: https://docs.elrond.com/querying-the-blockchain#transaction-status
+  let status
+  switch (tx.status) {
+    case 'success':
+    case 'executed':
+      status = TransactionStatus.SUCCESS
+      break
+    case 'fail':
+    case 'not-executed':
+      status = TransactionStatus.FAILURE
+      break
+    default:
+      status = TransactionStatus.PENDING
+  }
+
+  return {
+    raw: tx,
+    ...tx,
+    status,
+    timestamp: new Date(tx.timestamp * 1000)
+  }
+}
+
+abstract class ContractTransaction {
+  executionOptions?: ExecutionOptions
+
+  constructor(_options?: ExecutionOptions) {
     this.executionOptions = _options
   }
 
@@ -106,12 +132,12 @@ abstract class ContractTransaction {
   public abstract async toTransaction(): Promise<Transaction>
 }
 
-class CallFunctionTransaction extends ContractTransaction {
+class ContractCallTransaction extends ContractTransaction {
   address: string
   func: string
   args: string[]
 
-  constructor(_address: string, _func: string, _args: string[], _options?: ContractExecutionOptions) {
+  constructor(_address: string, _func: string, _args: string[], _options?: ExecutionOptions) {
     super(_options)
     this.address = _address
     this.func = _func
@@ -127,24 +153,36 @@ class CallFunctionTransaction extends ContractTransaction {
       throw new Error('Execution options must be set')
     }
 
-    // TODO: calculate gas limit from network
+    if (!this.executionOptions?.sender) {
+      throw new Error('Sender must be set')
+    }
+
+    if (!this.executionOptions?.provider) {
+      throw new Error('Provider must be set')
+    }
+
+    const data = this.getTransactionDataString()
+    const networkConfig = await this.executionOptions?.provider.getNetworkConfig()
+    const gasPrice = networkConfig.minGasPrice
+    const gasLimit = networkConfig.minGasLimit + networkConfig.gasPerDataByte * data.length
 
     return {
       sender: this.executionOptions!.sender,
       receiver: this.address,
       value: this.executionOptions!.value || '0',
-      gasPrice: this.executionOptions!.gasPrice,
-      gasLimit: this.executionOptions!.gasLimit,
-      data: this.getTransactionDataString()
+      gasPrice: this.executionOptions!.gasPrice || gasPrice,
+      gasLimit: this.executionOptions!.gasLimit || gasLimit,
+      data,
+      meta: this.executionOptions!.meta,
     }
   }
 }
 
 export class Contract {
   address: string = ''
-  executionOptions?: ContractExecutionOptions
+  executionOptions?: ExecutionOptions
 
-  static at(address: string, options?: ContractExecutionOptions): Contract {
+  static async at(address: string, options?: ExecutionOptions): Promise<Contract> {
     const c = new Contract()
     c.address = address
     c.executionOptions = options
@@ -155,22 +193,23 @@ export class Contract {
     // TODO
   }
 
-  async callFunction(_func: string, _args: string[], options?: ContractExecutionOptions): Promise<TransactionReceipt> {
-    const obj = this.createCallFunctionTransaction(_func, _args, options)
+  async callFunction(_func: string, _args: string[], options?: ExecutionOptions): Promise<TransactionReceipt> {
+    const obj = this.createCallTransaction(_func, _args, options)
     const tx = await obj.toTransaction()
+    const mergedOptions = this._mergeChainOptions(options)
 
-    if (!options?.provider) {
-      throw new Error('No provider')
+    if (!mergedOptions?.provider) {
+      throw new Error('A provider must be set')
     }
 
-    return await options?.provider.signAndSendTransaction(tx)
+    return await mergedOptions?.provider.signAndSendTransaction(tx)
   }
 
-  createCallFunctionTransaction(func: string, args: string[], options?: ContractExecutionOptions): ContractTransaction {
-    return new CallFunctionTransaction(this.address, func, args, this._mergeChainOptions(options))
+  createCallTransaction(func: string, args: string[], options?: ExecutionOptions): ContractTransaction {
+    return new ContractCallTransaction(this.address, func, args, this._mergeChainOptions(options))
   }
 
-  private _mergeChainOptions(options?: ContractExecutionOptions) {
+  private _mergeChainOptions(options?: ExecutionOptions) {
     return Object.assign({}, this.executionOptions, options)
   }
 }

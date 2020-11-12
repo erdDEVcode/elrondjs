@@ -24,7 +24,8 @@
   "scripts": {
     "prepublishOnly": "npm run build",
     "release": "semantic-release",
-    "build": "tsc"
+    "build": "tsc",
+    "dev": "tsc --watch"
   },
   "husky": {
     "hooks": {

@@ -337,6 +337,9 @@ export class ProxyProvider extends Api implements Provider {
   async queryContract (params: ContractQueryParams): Promise<ContractQueryResult> {
     const ret = await this._call(`/vm-values/query`, {
       method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify({
         scAddress: params.contractAddress,
         funcName: params.functionName,

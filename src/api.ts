@@ -27,11 +27,11 @@ export class Api {
       timeout: options.timeout || 3000,
       reponseType: options.responseType || 'json',
       headers: options.headers || {},
-      body: options.body || undefined,
+      data: options.body || undefined,
       method: options.method || 'GET',
     }
 
-    ret = await this._axios({
+    ret = await this._axios.request({
       url: urlPath,
       ...finalOpts,
     })

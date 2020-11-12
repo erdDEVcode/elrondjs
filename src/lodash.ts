@@ -1,7 +1,5 @@
-import get from 'lodash.get'
-
 const lodash = {
-  get,
+  get: require('lodash.get'),
 }
 
 export default lodash

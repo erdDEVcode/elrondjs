@@ -7,6 +7,14 @@
   "author": "erdDEV team (https://erd.dev)",
   "homepage": "https://erdor.erd.dev",
   "license": "AGPLv3",
+  "files": [
+    "dist",
+    "README.md",
+    "package.json",
+    "package-lock.json",
+    "CHANGELOG.md",
+    "LICENSE.md"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/erdDEVcode/erdor.git"

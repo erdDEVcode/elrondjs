@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/erdDEVcode/erdor/compare/v1.1.0...v1.1.1) (2020-11-13)
+
+
+### Bug Fixes
+
+* API calls, lodash ([c2f5721](https://github.com/erdDEVcode/erdor/commit/c2f572102961c05a26af313bc1699a55591725ae))
+
 # [1.1.0](https://github.com/erdDEVcode/erdor/compare/v1.0.3...v1.1.0) (2020-11-11)
 
 

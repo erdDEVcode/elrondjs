@@ -1,99 +1,228 @@
-import { Buffer } from 'buffer'
-
-import _ from './lodash'
+import { base64ToHex } from './utils'
 import { Api } from './api'
 
-export { Api }
+export { Api, base64ToHex }
 
+/**
+ * Network configuration.
+ * 
+ * These values are obtained by querying an Elrond network.
+ */
 export interface NetworkConfig {
+  /**
+   * The version of the Elrond software running on the network.
+   */
   version: string,
+  /**
+   * The unique id of the chain.
+   */
   chainId: string,
+  /**
+   * Gas limit per byte of data sent with a transaction.
+   */
   gasPerDataByte: number,
+  /**
+   * The minimum gas limit of a basic transaction, excluding the gast cost of additional data sent along.
+   */
   minGasLimit: number,
+  /**
+   * The minimum gas price for sending transactions.
+   */
   minGasPrice: number,
+  /**
+   * The minimum value for the transaction version field.
+   */
   minTransactionVersion: number,
 }
 
-export interface NetworkMetadata {
-  primaryToken?: string,
-}
-
-export interface Balance {
-  token: string,
-  amount: string,
-}
-
-export interface Rate {
-  token: string,
-  currency: string,
-  value: number,
-}
-
-export interface PromiseResolver {
-  resolve: Function,
-  reject: Function,
-}
-
+/**
+ * An Elrond address.
+ * 
+ * This may be an externally-owned account or a contract address.
+ */
 export interface Address {
+  /**
+   * The bech32 address.
+   */
   address: string,
+  /**
+   * The balance.
+   * 
+   * Denominated in the smallest unit (10^18 eGLD).
+   */
   balance: string,
+  /**
+   * The last nonce used for sending transactions.
+   */
   nonce: number,
+  /**
+   * The code, if any, at this address.
+   */
   code: string,
-  readOnly?: boolean,
 }
 
+/**
+ * Represents the parameters for querying a contract.
+ */
 export interface ContractQueryParams {
+  /**
+   * Address of the contract.
+   */
   contractAddress: string,
+  /**
+   * Name of the function to call.
+   */
   functionName: string,
+  /**
+   * Arguments to pass to the function.
+   */
   args: string[],
 }
 
+/**
+ * Represents the result of querying a contract.
+ */
 export interface ContractQueryResult {
+  /**
+   * The data returned from the query call.
+   */
   returnData: string[],
+  /**
+   * The result code, indicating success or failure.
+   */
   returnCode: string,
+  /**
+   * Amount of gas which would be refunded had this been a transaction.
+   */
   gasRefund: number,
+  /**
+   * Amount of gas that would be unused had this been a transaction.
+   */
   gasRemaining: number,
 }
 
+/**
+ * Represents the different possible types of a query result.
+ */
 export enum ContractQueryResultDataType {
   INT,
   HEX,
   STRING,
 }
 
+/**
+ * Represents options for parsing a contract query result.
+ */
 export interface ContractQueryResultParseOptions {
+  /**
+   * The desired type to parse the result as.
+   */
   type: ContractQueryResultDataType,
+  /**
+   * The index into the `returnData` array at which th result lies.
+   * 
+   * @see ContractQueryResult
+   */
   index?: number,
 }
 
+/**
+ * Represents an unsigned transaction.
+ */
 export interface Transaction {
+  /**
+   * The sender address in bech32 format.
+   */
   sender: string,
+  /**
+   * The receiver address in bech32 format.
+   */
   receiver: string,
+  /**
+   * The amount of eGLD to transfer.
+   * 
+   * Denominated in the smallest unit (10^18).
+   */
   value: string,
+  /**
+   * The gas price.
+   * 
+   * Denominated in the smallest unit (10^18).
+   */
   gasPrice?: number,
+  /**
+   * The gas limit.
+   */
   gasLimit?: number,
+  /**
+   * The data to send in the transaction.
+   */
   data?: string,
+  /**
+   * Options to pass to the transaction signer.
+   * 
+   * The specific structure of this value will depend on the signer being used.
+   */
   meta?: object,
 }
 
+/**
+ * Represents a signed transaction.
+ */
 export interface SignedTransaction extends Transaction {
+  /**
+   * The transaction nonce.
+   */
   nonce: number,
+  /**
+   * The network chain id.
+   */
   chainId: string,
+  /**
+   * Transaction version.
+   */
   version: number,
+  /**
+   * The signature.
+   */
   signature: string,
 }
 
+/**
+ * Represents a transaction receipt returned from the blockchain.
+ */
 export interface TransactionReceipt {
+  /**
+   * The final signed transaction.
+   */
   signedTransaction: SignedTransaction,
+  /**
+   * The transaction hash, for tracking purposes.
+   */
   hash: string,
 }
 
+/**
+ * Transaction status.
+ */
 export enum TransactionStatus {
+  /**
+   * This means the transaction is yet to be executed by the network.
+   */
   PENDING = 0,
+  /**
+   * This means the transaction was executed by the network and performed all of its actions.
+   */
   SUCCESS = 1,
+  /**
+   * This means the transaction failed to be executed by the network and/or failed to perform all of its actions.
+   */
   FAILURE,
 }
 
+/**
+ * Represents a previously broadcast transction.
+ */
 export interface TransactionOnChain extends Transaction {
   raw: object,
   epoch: number,
@@ -127,9 +256,7 @@ const joinArguments = (...args: string[]) => {
   return args.join('@')
 }
 
-const queryResultValueToHex = (val: string) => {
-  return `0x${Buffer.from(val, 'base64').toString('hex')}`  
-}
+const queryResultValueToHex = (val: string) => base64ToHex(val)
 
 export const parseQueryResult = (result: ContractQueryResult, options: ContractQueryResultParseOptions): (string | number) => {
   options.index = options.index || 0
@@ -314,15 +441,15 @@ export class ProxyProvider extends Api implements Provider {
     
   async getNetworkConfig () {
     const ret = await this._call(`/network/config`)
-    const { config } = this._parseResponse(ret, 'Error fetching network config')
+    const { config } = this._parseResponse(ret, 'Error fetching network config') || {}
 
     return {
-      version: _.get(config, 'erd_latest_tag_software_version'),
-      chainId: _.get(config, 'erd_chain_id'),
-      gasPerDataByte: _.get(config, 'erd_gas_per_data_byte'),
-      minGasPrice: _.get(config, 'erd_min_gas_price'),
-      minGasLimit: _.get(config, 'erd_min_gas_limit'),
-      minTransactionVersion: _.get(config, 'erd_min_transaction_version', 1),
+      version: config.erd_latest_tag_software_version,
+      chainId: config.erd_chain_id,
+      gasPerDataByte: config.erd_gas_per_data_byte,
+      minGasPrice: config.erd_min_gas_price,
+      minGasLimit: config.erd_min_gas_limit,
+      minTransactionVersion: config.erd_min_transaction_version,
     }
   }
   

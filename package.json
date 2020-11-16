@@ -6,7 +6,7 @@
   "types": "dist/index.d.ts",
   "author": "erdDEV team (https://erd.dev)",
   "homepage": "https://elrondjs.erd.dev",
-  "license": "AGPLv3",
+  "license": "MIT",
   "files": [
     "dist",
     "README.md",
@@ -43,7 +43,6 @@
     }
   },
   "dependencies": {
-    "axios": "^0.21.0",
-    "lodash.get": "^4.4.2"
+    "axios": "^0.21.0"
   }
 }

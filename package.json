@@ -1,7 +1,7 @@
 {
   "name": "elrondjs",
   "version": "1.2.1",
-  "description": "Javascript SDK for the Elrond blockchain",
+  "description": "Javascript SDK for the Elrond blockchain with Typescript support.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "author": "erdDEV team (https://erd.dev)",

@@ -30,8 +30,7 @@ module.exports = {
             "message": "chore(release): ${nextRelease.version}\n\n${nextRelease.notes}"
         }],
         ["@semantic-release/exec", {
-            "successCmd": "git push",
-            "prepareCmd": "yarn build",
+            "successCmd": "git push"
         }],        
     ]
 }

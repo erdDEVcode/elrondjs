@@ -1,5 +1,9 @@
 import axios, { AxiosInstance } from 'axios'
 
+
+/**
+ * Options for API calls.
+ */
 export interface ApiCallOptions {
   timeout?: number,
   responseType?: string,
@@ -8,10 +12,18 @@ export interface ApiCallOptions {
   method?: "GET" | "POST",
 }
 
+/**
+ * Base class for API interfaces.
+ * 
+ * This provides convenience methods for making request and performing basic response parsing.
+ */
 export class Api {
   _axios: AxiosInstance
   _baseUrl: string
 
+  /**
+   * @param baseUrl The root endpoint for all API requests.
+   */
   constructor(baseUrl: string) {
     this._baseUrl = baseUrl
 
@@ -20,6 +32,12 @@ export class Api {
     })
   }
 
+  /**
+   * Make a request.
+   * @param urlPath The API path relative to the root endpoint configured in the constructor.
+   * @param options Call options.
+   * @return {any}
+   */
   async _call(urlPath: string, options: ApiCallOptions = {}) {
     let ret: any
 

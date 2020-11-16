@@ -1,11 +1,11 @@
 {
-  "name": "erdor",
+  "name": "elrondjs",
   "version": "1.1.2",
   "description": "Javascript SDK for the Elrond blockchain",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "author": "erdDEV team (https://erd.dev)",
-  "homepage": "https://erdor.erd.dev",
+  "homepage": "https://elrondjs.erd.dev",
   "license": "AGPLv3",
   "files": [
     "dist",
@@ -17,7 +17,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/erdDEVcode/erdor.git"
+    "url": "https://github.com/erdDEVcode/elrondjs.git"
   },
   "devDependencies": {
     "@commitlint/cli": "^9.1.2",
@@ -27,13 +27,15 @@
     "@semantic-release/git": "^9.0.0",
     "husky": "^4.3.0",
     "semantic-release": "^17.2.2",
+    "typedoc": "^0.19.2",
     "typescript": "^4.0.5"
   },
   "scripts": {
     "prepublishOnly": "npm run build",
     "release": "semantic-release",
     "build": "tsc",
-    "dev": "tsc --watch"
+    "dev": "tsc --watch",
+    "build-docs": "rm -rf ./docs && typedoc --out docs"
   },
   "husky": {
     "hooks": {

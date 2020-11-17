@@ -3,6 +3,7 @@
   "version": "1.2.1",
   "description": "Javascript SDK for the Elrond blockchain with Typescript support.",
   "main": "dist/cjs/index.js",
+  "module": "dist/esm/index.js",
   "types": "dist/cjs/index.d.ts",
   "author": "erdDEV team (https://erd.dev)",
   "homepage": "https://elrondjs.erd.dev",
@@ -27,16 +28,12 @@
     "@semantic-release/git": "^9.0.0",
     "husky": "^4.3.0",
     "semantic-release": "^17.2.2",
-    "ts-loader": "^8.0.11",
     "typedoc": "^0.19.2",
-    "typescript": "^4.0.5",
-    "webpack": "^5.4.0",
-    "webpack-bundle-analyzer": "^4.1.0",
-    "webpack-cli": "^4.2.0"
+    "typescript": "^4.0.5"
   },
   "scripts": {
-    "build": "NODE_ENV=production webpack",
-    "dev": "webpack --watch",
+    "build": "tsc && tsc -p tsconfig-esm.json",
+    "dev": "tsc --watch",
     "build-docs": "rm -rf ./docs && typedoc",
     "prepublishOnly": "npm run build",
     "release": "semantic-release"
@@ -47,8 +44,6 @@
     }
   },
   "dependencies": {
-    "axios": "^0.21.0",
-    "typedoc-neo-theme": "^1.0.10",
-    "typedoc-twilio-theme": "^1.0.1"
+    "axios": "^0.21.0"
   }
 }

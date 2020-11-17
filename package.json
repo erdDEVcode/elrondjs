@@ -47,6 +47,8 @@
     }
   },
   "dependencies": {
-    "axios": "^0.21.0"
+    "axios": "^0.21.0",
+    "typedoc-neo-theme": "^1.0.10",
+    "typedoc-twilio-theme": "^1.0.1"
   }
 }

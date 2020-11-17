@@ -129,8 +129,6 @@ export interface ContractQueryResultParseOptions {
   type: ContractQueryResultDataType,
   /**
    * The index into the `returnData` array at which th result lies.
-   * 
-   * @see ContractQueryResult
    */
   index?: number,
 }
@@ -198,7 +196,7 @@ export interface SignedTransaction extends Transaction {
 }
 
 /**
- * Represents a transaction receipt returned from the blockchain.
+ * Represents a receipt returned from the blockchain for a transaction that was broadcast.
  */
 export interface TransactionReceipt {
   /**
@@ -283,7 +281,6 @@ export interface TransactionOnChain extends Transaction {
 
 /**
  * Interface for interacting with the Elrond network.
- * @see ProxyProvider
  */
 export interface Provider {
   /**

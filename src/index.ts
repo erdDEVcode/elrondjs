@@ -105,8 +105,17 @@ export interface ContractQueryResult {
  * Represents the different possible types of a query result.
  */
 export enum ContractQueryResultDataType {
+  /**
+   * Integer data type.
+   */
   INT,
+  /**
+   * Hex string data type.
+   */
   HEX,
+  /**
+   * String data type.
+   */
   STRING,
 }
 
@@ -224,40 +233,131 @@ export enum TransactionStatus {
  * Represents a previously broadcast transction.
  */
 export interface TransactionOnChain extends Transaction {
+  /**
+   * Raw transaction data from the chain.
+   */
   raw: object,
+  /**
+   * Epoch in which transaction was executed.
+   */
   epoch: number,
+  /**
+   * Nonce - account/shard?.
+   */
   nonce: number
+  /**
+   * Epoch round in which transaction was executed.
+   */
   round: number,
+  /**
+   * Gas price.
+   * 
+   * Denominated in the smallest unit (10^18).
+   */
   gasPrice: number,
+  /**
+   * Gas limit.
+   */
   gasLimit: number,
+  /**
+   * Shard of receiver address.
+   */
   destinationShard: number,
+  /**
+   * Shard of sender address.
+   */
   sourceShard: number,
+  /**
+   * Transaction result status.
+   */
   status: TransactionStatus,
+  /**
+   * Transaction signature.
+   */
   signature: string,
+  /**
+   * Transaction execution time.
+   */
   timestamp: Date,
 }
 
+/**
+ * Interface for interacting with the Elrond network.
+ * @see ProxyProvider
+ */
 export interface Provider {
+  /**
+   * Get configuration information for the chain.
+   */
   getNetworkConfig: () => Promise<NetworkConfig>,
+  /**
+   * Get on-chain information for given address.
+   * 
+   * @param address The address.
+   */
   getAddress: (address: string) => Promise<Address>,
+  /**
+   * Query a contract.
+   * 
+   * This will call the given contract function in read-only mode.
+   *
+   * @param params Contract query parameters.
+   */
   queryContract: (params: ContractQueryParams) => Promise<ContractQueryResult>,
+  /**
+   * Broadcast a signed transaction to the network.
+   *
+   * @param signedTx The transaction.
+   */
   sendSignedTransaction: (signedTx: SignedTransaction) => Promise<TransactionReceipt>,
+  /**
+   * Get information about a transaction.
+   *
+   * @param txHash Hash of transaction to query.
+   */
   getTransaction: (txHash: string) => Promise<TransactionOnChain>,
 }
 
+
+/**
+ * Interface for signing and sending transactions.
+ */
 export interface Signer {
+  /**
+   * Sign a transaction.
+   * 
+   * @param tx The transaction to sign.
+   */
   signTransaction: (tx: Transaction) => Promise<SignedTransaction>,
+  /**
+   * Sign and broadcast a transaction.
+   * 
+   * Objects implementing this interface should use a `Provider` to broadcast the 
+   * transaction.
+   * 
+   * @param tx The transaction to sign.
+   */
   signAndSendTransaction: (tx: Transaction) => Promise<TransactionReceipt>,
 }
 
-export type WalletChangeCallbackHandler = () => void
-
+/**
+ * @internal
+ */
 const joinArguments = (...args: string[]) => {
   return args.join('@')
 }
 
+/**
+ * @internal
+ */
 const queryResultValueToHex = (val: string) => base64ToHex(val)
 
+/**
+ * Parse a contracty query result.
+ * 
+ * @param result The query result.
+ * @param options Parsing options.
+ */
 export const parseQueryResult = (result: ContractQueryResult, options: ContractQueryResultParseOptions): (string | number) => {
   options.index = options.index || 0
 
@@ -282,6 +382,11 @@ export const parseQueryResult = (result: ContractQueryResult, options: ContractQ
   }
 }
 
+/**
+ * Parse raw transaction data from the chain.
+ * 
+ * @param tx Raw transaction data.
+ */
 export const parseRawTransaction = (tx: any): TransactionOnChain => {
   // status parsing: https://docs.elrond.com/querying-the-blockchain#transaction-status
   let status
@@ -306,33 +411,95 @@ export const parseRawTransaction = (tx: any): TransactionOnChain => {
   }
 }
 
-export interface ContractTransactionOptions {
+/**
+ * Options for interacting with a contract.
+ * 
+ * This includes default transaction settings as well as the `Provider` to use for contract querying. 
+ */
+export interface ContractOptions {
+  /**
+   * Sender bech32 address.
+   */
   sender?: string,
+  /**
+   * Amount to transfer.
+   * 
+   * Denominated in the smallest eGLD unit (10^18).
+   */
   value?: string,
+  /**
+   * Gas price.
+   * 
+   * Denominated in the smallest eGLD unit (10^18).
+   */
   gasPrice?: number,
+  /**
+   * Gas limit.
+   */
   gasLimit?: number,
+  /**
+   * Options to pass to the transaction signer.
+   *
+   * The specific structure of this value will depend on the signer being used.
+   */
   meta?: object,
+  /**
+   * The provider to use.
+   */
   provider?: Provider,
+  /**
+   * The signer to use.
+   */
   signer?: Signer,
 }
 
+/**
+ * Represents a contract-related transaction.
+ * 
+ * This is the base class of transactions related to deploying, upgrading and calling contracts.
+ */
 abstract class ContractTransaction {
-  _transactionOptions?: ContractTransactionOptions
+  protected _options?: ContractOptions
 
-  constructor(options?: ContractTransactionOptions) {
-    this._transactionOptions = options
+  /**
+   * Constructor.
+   * 
+   * @param options Options for when interacting with a contract. 
+   */
+  constructor(options?: ContractOptions) {
+    this._options = options
   }
 
+  /**
+   * Get the `data` string representation of this contract-related transaction.
+   */
   public abstract getTransactionDataString(): string
+  
+  /**
+   * Get the transaction representation of this contract-related transaction.
+   */
   public abstract async toTransaction(): Promise<Transaction>
 }
 
+/**
+ * Represents a contract call transaction.
+ * 
+ * This is for invoking a contract function via a transaction.
+ */
 class ContractCallTransaction extends ContractTransaction {
-  _address: string
-  _func: string
-  _args: string[]
+  protected _address: string
+  protected _func: string
+  protected _args: string[]
 
-  constructor(address: string, func: string, args: string[], options?: ContractTransactionOptions) {
+  /**
+   * Constructor.
+   * 
+   * @param address Contract address.
+   * @param func Function to call.
+   * @param args Arguments to pass to function.
+   * @param options Transaction options.
+   */
+  constructor(address: string, func: string, args: string[], options?: ContractOptions) {
     super(options)
     this._address = address
     this._func = func
@@ -344,75 +511,119 @@ class ContractCallTransaction extends ContractTransaction {
   }
 
   public async toTransaction(): Promise<Transaction> {
-    if (!this._transactionOptions) {
+    if (!this._options) {
       throw new Error('Execution options must be set')
     }
 
-    if (!this._transactionOptions?.sender) {
+    if (!this._options?.sender) {
       throw new Error('Sender must be set')
     }
 
-    if (!this._transactionOptions?.provider) {
+    if (!this._options?.provider) {
       throw new Error('Provider must be set')
     }
 
     const data = this.getTransactionDataString()
-    const networkConfig = await this._transactionOptions?.provider.getNetworkConfig()
+    const networkConfig = await this._options?.provider.getNetworkConfig()
     const gasPrice = networkConfig.minGasPrice
     const gasLimit = networkConfig.minGasLimit + networkConfig.gasPerDataByte * data.length
 
     return {
-      sender: this._transactionOptions!.sender,
+      sender: this._options!.sender,
       receiver: this._address,
-      value: this._transactionOptions!.value || '0',
-      gasPrice: this._transactionOptions!.gasPrice || gasPrice,
-      gasLimit: this._transactionOptions!.gasLimit || gasLimit,
+      value: this._options!.value || '0',
+      gasPrice: this._options!.gasPrice || gasPrice,
+      gasLimit: this._options!.gasLimit || gasLimit,
       data,
-      meta: this._transactionOptions!.meta,
+      meta: this._options!.meta,
     }
   }
 }
 
-
+/**
+ * Interfaces for working with contracts.
+ */
 export class Contract {
   protected _address: string = ''
-  protected _transactionOptions?: ContractTransactionOptions
+  protected _options?: ContractOptions
 
-  static at(address: string, options?: ContractTransactionOptions): Contract {
+  /**
+   * Get instance for contract at given address.
+   * 
+   * The `options` parameter should typically at least contain `sender`, `provider` and `signer` so that 
+   * subsequent interactions can make use of these.
+   * 
+   * @param address Contract address.
+   * @param options Base options for all subsequent operations.
+   */
+  public static at(address: string, options?: ContractOptions): Contract {
     const c = new Contract()
     c._address = address
-    c._transactionOptions = options
+    c._options = options
     return c
   }
 
-  async query(func: string, args: string[], options?: ContractTransactionOptions): Promise<ContractQueryResult> {
+  /**
+   * Query the contract.
+   * 
+   * This will call the given contract function in read-only mode, i.e. without using a transaction.
+   * 
+   * @param func Function to call.
+   * @param args Arguments to pass to function.
+   * @param options Options which will get merged with the base options set in the constructor.
+   */
+  async query(func: string, args: string[], options?: ContractOptions): Promise<ContractQueryResult> {
     const mergedOptions = this._mergeTransactionOptions(options, 'provider')
 
-    return await mergedOptions.provider.queryContract({
+    return await mergedOptions.provider!.queryContract({
       contractAddress: this._address,
       functionName: func,
       args,
     })
   }
 
-  async callFunction(func: string, args: string[], options?: ContractTransactionOptions): Promise<TransactionReceipt> {
+  /**
+   * Call function using a transaction.
+   * 
+   * @param func Function to call.
+   * @param args Arguments to pass to function.
+   * @param options Options which will get merged with the base options set in the constructor.
+   */
+  async callFunction(func: string, args: string[], options?: ContractOptions): Promise<TransactionReceipt> {
     const obj = this.createCallTransaction(func, args, options)
     const tx = await obj.toTransaction()
     const mergedOptions = this._mergeTransactionOptions(options, 'signer')
 
-    return await mergedOptions?.signer.signAndSendTransaction(tx)
+    return await mergedOptions.signer!.signAndSendTransaction(tx)
   }
 
-  createCallTransaction(func: string, args: string[], options?: ContractTransactionOptions): ContractTransaction {
+  /**
+   * Get transaction to call a function.
+   *
+   * @param func Function to call.
+   * @param args Arguments to pass to function.
+   * @param options Options which will get merged with the base options set in the constructor.
+   */
+  createCallTransaction(func: string, args: string[], options?: ContractOptions): ContractTransaction {
     return new ContractCallTransaction(this._address, func, args, this._mergeTransactionOptions(options, 'provider'))
   }
 
-  protected _mergeTransactionOptions(options?: ContractTransactionOptions, ...fieldsToCheck: string[]): ContractTransactionOptions {
-    const mergedOptions = Object.assign({}, this._transactionOptions, options)
+  /**
+   * Merge given options with options set in the constructor.
+   * 
+   * The options in the constructor will be extended with the given options and a new object will 
+   * be returned, leaving the originals unmodified.
+   * 
+   * @param options Options to merge.
+   * @param fieldsToCheck Fields to check the presence of. If any of these fields are missing an error will be thrown.
+   * @throws {Errors} If any field listed in `fieldsToCheck` is absent in the final merged options object.
+   */
+  protected _mergeTransactionOptions(options?: ContractOptions, ...fieldsToCheck: string[]): ContractOptions {
+    const mergedOptions = Object.assign({}, this._options, options)
 
     if (fieldsToCheck.length) {
       fieldsToCheck.forEach(field => {
-        if (!mergedOptions[field]) {
+        if (!(mergedOptions as any)[field]) {
           throw new Error(`${field} must be set`)
         }
       })
@@ -422,11 +633,26 @@ export class Contract {
   }
 }
 
+/**
+ * A provider which speaks to an Elrond Proxy endpoint.
+ */
 export class ProxyProvider extends Api implements Provider {
+  /**
+   * Constructor.
+   * 
+   * @param api Proxy endpoint base URL.
+   */
   constructor (api: string) {
     super(api)
   }
 
+  /**
+   * Parse a reponse.
+   * 
+   * @param data The returned data to parse.
+   * @param errorMsg Prefix for any error messages thrown.
+   * @throws {Error} If response indicates a failure or parsing failed.
+   */
   protected _parseResponse (data: any, errorMsg: string): any {
     if (data.error || (data.code !== 'successful')) {
       throw new Error(`${errorMsg}: ${data.error || data.code || 'internal error'}`)
@@ -439,7 +665,7 @@ export class ProxyProvider extends Api implements Provider {
     return data.data
   }
     
-  async getNetworkConfig () {
+  public async getNetworkConfig () {
     const ret = await this._call(`/network/config`)
     const { config } = this._parseResponse(ret, 'Error fetching network config') || {}
 
@@ -453,7 +679,7 @@ export class ProxyProvider extends Api implements Provider {
     }
   }
   
-  async getAddress (address: string): Promise<Address> {
+  public async getAddress (address: string): Promise<Address> {
     const ret = await this._call(`/address/${address}`)
 
     const { account } = this._parseResponse(ret, 'Error fetching address info')
@@ -461,7 +687,7 @@ export class ProxyProvider extends Api implements Provider {
     return account
   }
 
-  async queryContract (params: ContractQueryParams): Promise<ContractQueryResult> {
+  public async queryContract (params: ContractQueryParams): Promise<ContractQueryResult> {
     const ret = await this._call(`/vm-values/query`, {
       method: 'POST',
       headers: {
@@ -479,7 +705,7 @@ export class ProxyProvider extends Api implements Provider {
     return data
   }  
 
-  async sendSignedTransaction(signedTx: SignedTransaction): Promise<TransactionReceipt> {
+  public async sendSignedTransaction(signedTx: SignedTransaction): Promise<TransactionReceipt> {
     const ret = await this._call(`/transaction/send`, {
       method: 'POST',
       headers: {
@@ -493,7 +719,7 @@ export class ProxyProvider extends Api implements Provider {
     return { signedTransaction: signedTx, hash }
   }  
 
-  async getTransaction(txHash: string): Promise<TransactionOnChain> {
+  public async getTransaction(txHash: string): Promise<TransactionOnChain> {
     const ret = await this._call(`/transaction/${txHash}`, {
       method: 'GET',
     })

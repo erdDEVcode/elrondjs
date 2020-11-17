@@ -2,10 +2,13 @@
   "compilerOptions": {
     "module": "CommonJS",
     "target": "es2015",
+    "sourceMap": true,
     "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "declaration": true,
+    "isolatedModules": true,
     "outDir": "./dist/cjs"
   },
   "include": [

@@ -2,11 +2,12 @@
   "name": "elrondjs",
   "version": "1.2.1",
   "description": "Javascript SDK for the Elrond blockchain with Typescript support.",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "dist/cjs/index.js",
+  "module": "dist/esm/index.js",
+  "types": "dist/cjs/index.d.ts",
   "author": "erdDEV team (https://erd.dev)",
   "homepage": "https://elrondjs.erd.dev",
-  "license": "AGPLv3",
+  "license": "MIT",
   "files": [
     "dist",
     "README.md",
@@ -31,11 +32,11 @@
     "typescript": "^4.0.5"
   },
   "scripts": {
-    "prepublishOnly": "npm run build",
-    "release": "semantic-release",
-    "build": "tsc",
+    "build": "tsc && tsc -p tsconfig-esm.json",
     "dev": "tsc --watch",
-    "build-docs": "rm -rf ./docs && typedoc --out docs"
+    "build-docs": "rm -rf ./docs && typedoc",
+    "prepublishOnly": "npm run build",
+    "release": "semantic-release"
   },
   "husky": {
     "hooks": {
@@ -43,7 +44,8 @@
     }
   },
   "dependencies": {
+    "@elrondnetwork/elrond-core-js": "^1.28.0",
     "axios": "^0.21.0",
-    "lodash.get": "^4.4.2"
+    "buffer": "^6.0.2"
   }
 }

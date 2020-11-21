@@ -1,0 +1,11 @@
+{
+  "inputFiles": [
+    "./src"
+  ],
+  "excludeProtected": true,
+  "stripInternal": true,
+  "theme": "minimal",
+  "mode": "file",
+  "out": "docs",
+  "json": "docs/docs.json"
+}

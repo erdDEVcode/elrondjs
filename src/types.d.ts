@@ -1,0 +1,1 @@
+declare module '@elrondnetwork/elrond-core-js';

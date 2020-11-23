@@ -1,5 +1,5 @@
 [![NPM module](https://badge.fury.io/js/elrondjs.svg)](https://badge.fury.io/js/elrondjs)
-[![Join the community](https://img.shields.io/badge/Join%20Telegram.svg)](https://t.me/erdDEV)
+[![Join the community](https://img.shields.io/badge/Chat%20on-Telegram-brightgreen.svg)](https://t.me/erdDEV)
 [![Follow on Twitter](https://img.shields.io/twitter/url/http/shields.io.svg?style=social&label=Follow&maxAge=2592000)](https://twitter.com/erd_dev)
 
 # elrond.js

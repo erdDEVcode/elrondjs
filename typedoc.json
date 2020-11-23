@@ -6,6 +6,5 @@
   "stripInternal": true,
   "theme": "minimal",
   "mode": "file",
-  "out": "docs",
-  "json": "docs/docs.json"
+  "out": "docs-api"
 }

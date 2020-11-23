@@ -34,7 +34,7 @@
   "scripts": {
     "build": "tsc && tsc -p tsconfig-esm.json",
     "dev": "tsc --watch",
-    "build-docs": "rm -rf ./docs && typedoc",
+    "build-docs": "rm -rf ./docs-api && typedoc",
     "prepublishOnly": "npm run build",
     "release": "semantic-release"
   },

@@ -77,7 +77,7 @@ abstract class ContractTransaction {
   public abstract getTransactionDataString(): string
 
   /**
-   * Get the transaction representation of this contract-related transaction.
+   * Get signable transaction representation of this contract-related transaction.
    */
   public abstract async toTransaction(): Promise<Transaction>
 }
@@ -185,13 +185,13 @@ export class Contract {
    * @param args Arguments to pass to function.
    * @param options Options which will get merged with the base options set in the constructor.
    */
-  async query(func: string, args: string[], options?: ContractOptions): Promise<ContractQueryResult> {
+  async query(func: string, args?: string[], options?: ContractOptions): Promise<ContractQueryResult> {
     const mergedOptions = this._mergeTransactionOptions(options, 'provider')
 
     return await mergedOptions.provider!.queryContract({
       contractAddress: this._address,
       functionName: func,
-      args,
+      args: args || [],
     })
   }
 
@@ -202,8 +202,8 @@ export class Contract {
    * @param args Arguments to pass to function.
    * @param options Options which will get merged with the base options set in the constructor.
    */
-  async invoke(func: string, args: string[], options?: ContractOptions): Promise<TransactionReceipt> {
-    const obj = this.createInvocation(func, args, options)
+  async invoke(func: string, args?: string[], options?: ContractOptions): Promise<TransactionReceipt> {
+    const obj = this.createInvocation(func, args || [], options)
     const tx = await obj.toTransaction()
     const mergedOptions = this._mergeTransactionOptions(options, 'signer', 'provider')
 

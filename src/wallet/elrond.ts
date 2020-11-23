@@ -114,7 +114,7 @@ export class ElrondWallet implements Wallet {
   }
 
   public address (): string {
-    return this._account.addres()
+    return this._account.address()
   }
 
   public async signTransaction(tx: Transaction, provider: Provider): Promise<SignedTransaction> {

@@ -204,6 +204,7 @@ export interface TransactionReceipt {
   hash: string,
 }
 
+
 /**
  * Transaction status.
  */
@@ -302,6 +303,14 @@ export interface Provider {
    * @param signedTx The transaction.
    */
   sendSignedTransaction: (signedTx: SignedTransaction) => Promise<TransactionReceipt>,
+  /**
+   * Wait for a broadcast transaction to finish executing.
+   * 
+   * This will throw an `Error` if the transaction fails for any reason.
+   *
+   * @param txHash Hash of transaction to wait for.
+   */
+  waitForTransaction: (txHash: string) => Promise<void>,
   /**
    * Get information about a transaction.
    *

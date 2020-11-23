@@ -1,4 +1,4 @@
-import { Api } from '../lib'
+import { Api, TransactionTracker } from '../lib'
 
 import { 
   Provider,
@@ -124,6 +124,10 @@ export class ProxyProvider extends Api implements Provider {
     const { txHash: hash } = this._parseResponse(ret, 'Error sending transaction')
 
     return { signedTransaction: signedTx, hash }
+  }
+
+  public async waitForTransaction(txHash: string): Promise<void> {
+    return new TransactionTracker(this, txHash).waitForCompletion()
   }
 
   public async getTransaction(txHash: string): Promise<TransactionOnChain> {

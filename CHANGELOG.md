@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/erdDEVcode/elrondjs/compare/v1.2.1...v1.3.0) (2020-11-23)
+
+
+### Features
+
+* Add ledger wallet support ([335c1e0](https://github.com/erdDEVcode/elrondjs/commit/335c1e0511067f10cb7fd0fbb267cb366593102b))
+
 ## [1.2.1](https://github.com/erdDEVcode/elrondjs/compare/v1.2.0...v1.2.1) (2020-11-16)
 
 # [1.2.0](https://github.com/erdDEVcode/elrondjs/compare/v1.1.2...v1.2.0) (2020-11-16)

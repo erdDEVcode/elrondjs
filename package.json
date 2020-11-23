@@ -45,6 +45,7 @@
   },
   "dependencies": {
     "@elrondnetwork/elrond-core-js": "^1.28.0",
+    "@elrondnetwork/hw-app-elrond": "^0.1.17",
     "axios": "^0.21.0",
     "buffer": "^6.0.2"
   }

@@ -1,28 +1,13 @@
 import { Buffer } from 'buffer'
 import Elrond from '@elrondnetwork/elrond-core-js'
-import { Provider, SignedTransaction, Transaction, Wallet } from '../common'
-
-/**
- * Definition of the `Elrond.account` type.
- * 
- * Remove this once `@elrondnetwork/elrond-core-js` has type definitions.
- * @internal
- */
-type Account = any
-
+import { WalletBase } from './base'
+import { Account, validateAccount } from './utils'
+import { Transaction, Provider, SignedTransaction } from '../common'
 
 /**
  * @internal
  */
 const PEM_REGEX = /-----BEGIN[^-]+-----([^-]+)-----END[^-]+/igm
-
-
-/**
- * @internal
- */
-const validateAccount = (a: any) => {
-  a.sign(new TextEncoder().encode('test message'))
-}
 
 
 /**
@@ -34,23 +19,25 @@ export const generateMnemonic = (): string => {
 
 
 /**
- * A [[Provider]] which speaks to an Elrond Proxy endpoint.
+ * Basic wallet.
  */
-export class ElrondWallet implements Wallet {
+export class BasicWallet extends WalletBase {
   protected _account: Account
 
   /**
    * Constructor.
    */
   protected constructor(account: Account) {
+    super()
     this._account = account
+    validateAccount(account)
   }
 
   /**
    * Generate a wallet using a random mnemonic.
    */
-  public static generateRandom(): ElrondWallet {
-    return ElrondWallet.fromMnemonic(generateMnemonic())
+  public static generateRandom(): BasicWallet {
+    return BasicWallet.fromMnemonic(generateMnemonic())
   }
 
 
@@ -59,14 +46,13 @@ export class ElrondWallet implements Wallet {
    * 
    * @throws {Error} If loading fails.
    */
-  public static fromMnemonic(mnemonic: string): ElrondWallet {
+  public static fromMnemonic(mnemonic: string): BasicWallet {
     mnemonic = mnemonic.trim()
 
     try {
       let account = new Elrond.account()
       account.loadFromMnemonic(mnemonic)
-      validateAccount(account)
-      return new ElrondWallet(account)
+      return new BasicWallet(account)
     } catch (err) {
       throw new Error(`Error deriving from mnemonic: ${err.message}`)
     }
@@ -77,14 +63,13 @@ export class ElrondWallet implements Wallet {
    * 
    * @throws {Error} If loading fails.
    */
-  public static fromJsonKeyFileString(json: string, password: string): ElrondWallet {
+  public static fromJsonKeyFileString(json: string, password: string): BasicWallet {
     json = json.trim()
 
     try {
       let account = new Elrond.account()
       account.loadFromKeyFile(JSON.parse(json), password)
-      validateAccount(account)
-      return new ElrondWallet(account)
+      return new BasicWallet(account)
     } catch (err) {
       throw new Error(`Error deriving from JSON: ${err.message}`)
     }
@@ -95,7 +80,7 @@ export class ElrondWallet implements Wallet {
    * 
    * @throws {Error} If loading fails.
    */
-  public static fromPemFileString(pem: string): ElrondWallet {
+  public static fromPemFileString(pem: string): BasicWallet {
     try {
       const matches = PEM_REGEX.exec(pem.trim())
       const match = (matches ? matches[1] : '').trim()
@@ -103,8 +88,7 @@ export class ElrondWallet implements Wallet {
         const bytes = Buffer.from(match, 'base64')
         let account = new Elrond.account()
         account.loadFromPrivateKey(bytes)
-        validateAccount(account)
-        return new ElrondWallet(account)
+        return new BasicWallet(account)
       } else {
         throw new Error('No PEM found')
       }
@@ -113,31 +97,11 @@ export class ElrondWallet implements Wallet {
     }    
   }
 
-  public address (): string {
-    return this._account.address()
+  protected async _sign(rawTx: Buffer): Promise<string> {
+    return this._account.sign(rawTx)
   }
 
-  public async signTransaction(tx: Transaction, provider: Provider): Promise<SignedTransaction> {
-    const address = this.address()
-    const { nonce } = await provider.getAddress(address)
-    const { chainId } = await provider.getNetworkConfig()
-
-    const t = new Elrond.transaction(
-      nonce,
-      address,
-      tx.receiver,
-      tx.value,
-      parseInt(`${tx.gasPrice!}`, 10),
-      parseInt(`${tx.gasLimit!}`, 10),
-      tx.data,
-      chainId,
-      1
-    )
-
-    const s = t.prepareForSigning()
-    t.signature = await this._account.sign(s)
-
-    const st = t.prepareForNode()
-    return st        
+  protected _getAddress(): string {
+    return this._account.address()
   }
 }

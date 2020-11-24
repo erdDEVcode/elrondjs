@@ -256,13 +256,13 @@ await contract.query('method name', [ /* method arguments */ ], {
 })
 ```
 
-If we wish to send a transaction to a contract (i.e. write data) we need to pass in a `Signer` and set the `from` address for transactions:
+If we wish to send a transaction to a contract (i.e. write data) we need to pass in a `Signer` and set the `sender` address for transactions:
 
 ```js
 const contract = await Contract.at('contract bech32 address here', {
   provider: ...// Provider instance,
   signer: ...// Singer instance, e.g. an BasicWallet
-  from: ...// wallet bech32 address
+  sender: ...// wallet bech32 address
 })
 
 await contract.invoke('method name', [ /* method arguments */])
@@ -281,13 +281,13 @@ We can of course override the various values on a per-call basis:
 const contract = await Contract.at('contract bech32 address here', {
   provider: ...// Provider instance,
   signer: ...// Singer instance, e.g. an BasicWallet
-  from: ...// wallet bech32 address
+  sender: ...// wallet bech32 address
 })
 
 await contract.invoke('method name', [ /* method arguments */], {
   provider: ...// new Provider instance
   signer: ...// new Signer instance
-  from: ...// different from address
+  sender: ...// different from address
   gasLimit: 250000000,
   gasPrice: 1000000,
   value: '123',

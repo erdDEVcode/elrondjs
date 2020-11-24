@@ -1,3 +1,10 @@
+## [1.4.1](https://github.com/erdDEVcode/elrondjs/compare/v1.4.0...v1.4.1) (2020-11-24)
+
+
+### Bug Fixes
+
+* Guide mistype: ([dddd2c0](https://github.com/erdDEVcode/elrondjs/commit/dddd2c0ec59f543b1a1ce2f347ad7250c5e210fb))
+
 # [1.4.0](https://github.com/erdDEVcode/elrondjs/compare/v1.3.0...v1.4.0) (2020-11-23)
 
 # [1.3.0](https://github.com/erdDEVcode/elrondjs/compare/v1.2.1...v1.3.0) (2020-11-23)

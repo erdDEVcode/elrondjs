@@ -16,6 +16,9 @@ commands:
           name: Restore npm cache
           key: << parameters.executor >>-npm-cache-{{ checksum "package-lock.json" }}
       - run:
+          name: Pre-requisites
+          command: sudo apt-get install libusb-1.0-0-dev
+      - run:
           name: Install dependencies
           command: npm install
       - save_cache:
@@ -33,9 +36,6 @@ jobs:
           path: ~/repo
       - install_node_modules:
           executor: build
-      - run:
-          name: Pre-requisites
-          command: sudo apt-get install libusb-1.0-0-dev
       - run:
           name: Build
           command: npm run build

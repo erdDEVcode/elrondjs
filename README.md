@@ -54,6 +54,34 @@ import { Contract, ProxyProvider, BasicWallet } from 'elrondjs'
 
 For usage and full documentation see https://elrondjs.erd.dev.
 
+## Contributors guide
+
+To build the lib and watch for changes:
+
+```
+npm run dev
+```
+
+To build the lib for production:
+
+```
+npm run build
+```
+
+To build the docs:
+
+```
+npm run build-docs
+```
+
+To publish a new release:
+
+```
+npm run release
+```
+
+New releases are automatically published from the `master` branch via CI.
+
 ## License
 
 MIT

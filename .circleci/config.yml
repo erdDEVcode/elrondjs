@@ -34,6 +34,9 @@ jobs:
       - install_node_modules:
           executor: build
       - run:
+          name: Pre-requisites
+          command: sudo apt-get install libusb-1.0-0-dev
+      - run:
           name: Build
           command: npm run build
       - persist_to_workspace:

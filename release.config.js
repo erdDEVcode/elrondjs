@@ -30,7 +30,7 @@ module.exports = {
             "message": "chore(release): ${nextRelease.version}\n\n${nextRelease.notes}"
         }],
         ["@semantic-release/exec", {
-            "successCmd": "git push"
+            "successCmd": "git push && curl -X POST $VERCEL_REPUBLISH_ENDPOINT"
         }],        
     ]
 }

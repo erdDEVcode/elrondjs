@@ -49,6 +49,9 @@ jobs:
       - attach_workspace:
           at: ~/repo
       - run:
+          name: Add Github host key to known hosts
+          command: ssh-keyscan github.com >> ~/.ssh/known_hosts
+      - run:
           name: Publish release
           command: npm run release
 

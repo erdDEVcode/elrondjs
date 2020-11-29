@@ -1,3 +1,10 @@
+## [1.4.3](https://github.com/erdDEVcode/elrondjs/compare/v1.4.2...v1.4.3) (2020-11-29)
+
+
+### Bug Fixes
+
+* build ssh known_hosts file ([7fe1d30](https://github.com/erdDEVcode/elrondjs/commit/7fe1d30ca8c5f833fc8f56c48e4170b36472a322))
+
 ## [1.4.2](https://github.com/erdDEVcode/elrondjs/compare/v1.4.1...v1.4.2) (2020-11-29)
 
 

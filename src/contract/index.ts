@@ -82,6 +82,7 @@ abstract class ContractTransaction {
   public abstract async toTransaction(): Promise<Transaction>
 }
 
+
 /**
  * Represents a transaction to call a contract function.
  */
@@ -89,6 +90,7 @@ class ContractInvocation extends ContractTransaction {
   protected _address: string
   protected _func: string
   protected _args: string[]
+
 
   /**
    * Constructor.

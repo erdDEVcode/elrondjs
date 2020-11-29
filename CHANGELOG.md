@@ -1,3 +1,11 @@
+## [1.4.2](https://github.com/erdDEVcode/elrondjs/compare/v1.4.1...v1.4.2) (2020-11-29)
+
+
+### Bug Fixes
+
+* build issues ([931188d](https://github.com/erdDEVcode/elrondjs/commit/931188db5e5b38e16865adca79d5d0309d9a244c))
+* build issues ([159ea4d](https://github.com/erdDEVcode/elrondjs/commit/159ea4d26421f5dbb7bd2e370273c96c90029c3f))
+
 ## [1.4.1](https://github.com/erdDEVcode/elrondjs/compare/v1.4.0...v1.4.1) (2020-11-24)
 
 

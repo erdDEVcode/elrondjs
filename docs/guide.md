@@ -256,6 +256,40 @@ await contract.query('method name', [ /* method arguments */ ], {
 })
 ```
 
+When a contract is queries the return value is an array of one or more values. For example, the `getUserStakeByType` method of the Mainnet staking contract returns 5 values:
+
+```js
+const { addressToHexString } = require('elrondjs')
+
+... // initialize contract object
+
+const returnData = await contract.query('getUserStakeByType', [ addressToHexString('erd1a...')])
+
+/*
+  `returnData` is an array of values:
+
+  1. Withdrawable amount (int)
+  2. Amount in delegation queue (int)
+  3. Amount actively delegated (int)
+  4. Unstaked amount (int)
+  5. Deferred pament amount (int)
+*/
+```
+
+The raw returned data is usually in string format. To parse the data to obtain the value we want we use the `parseQueryResult()` method:
+
+```js
+const waitingStake = parseQueryResult(returnData, { index: 1, type: ContractQueryResultDataType.INT })
+```
+
+The `index` parameter above refers to the index of the desired value in the return data array. If ommitted then it's assumed to equal `0`. The `type` 
+parameter specifies the expected data type of the final parsed result. Thus, in this example `waitingStake` will be of type `Number`. The currently supported 
+types are:
+
+* `INT` - integers
+* `HEX` - hex strings
+* `STRING` - strings
+
 If we wish to send a transaction to a contract (i.e. write data) we need to pass in a `Signer` and set the `sender` address for transactions:
 
 ```js

@@ -1,3 +1,7 @@
+<p align="center">
+  <img width="250" height="250" src="https://raw.githubusercontent.com/erdDEVcode/elrondjs/master/assets/logo.png">
+</p>
+
 # elrond.js
 
 [![NPM module](https://badge.fury.io/js/elrondjs.svg)](https://badge.fury.io/js/elrondjs)

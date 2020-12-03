@@ -205,9 +205,10 @@ export class Contract {
    * @param options Options which will get merged with the base options set in the constructor.
    */
   async invoke(func: string, args?: string[], options?: ContractOptions): Promise<TransactionReceipt> {
-    const obj = this.createInvocation(func, args || [], options)
-    const tx = await obj.toTransaction()
     const mergedOptions = this._mergeTransactionOptions(options, 'signer', 'provider')
+
+    const obj = this.createInvocation(func, args || [], mergedOptions)
+    const tx = await obj.toTransaction()
 
     const signedTx = await mergedOptions.signer!.signTransaction(tx, mergedOptions.provider!)
 

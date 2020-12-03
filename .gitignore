@@ -3,3 +3,4 @@ node_modules
 npm-error*
 docs-api/
 stats/
+.DS_Store

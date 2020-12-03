@@ -1,9 +1,12 @@
 import axios, { AxiosInstance, AxiosRequestConfig, ResponseType, Method } from 'axios'
 
+
 /**
- * Options for API calls.
+ * Base options for for all API  requests.
+ *
+ * This can be overridden on a per-request basis.
  */
-export interface ApiCallOptions {
+export interface ApiOptions {
   /**
    * Milliseconds to count until the request automatically times out.
    * 
@@ -19,15 +22,26 @@ export interface ApiCallOptions {
    */
   responseType?: ResponseType,
   /**
-   * Additional HTTP headers to pass along with the request.
+   * Additional HTTP headers to pass along with every request.
    */
   headers?: Record<string, string>,
+}
+
+
+/**
+ * Options for individual API reqeusts.
+ * 
+ * This will override any equivalent `ApiOptions` options set at the instance level in the constructor.
+ */
+export interface ApiCallOptions extends ApiOptions {
   /**
    * Body to submit along with the request.
    */
   data?: string,
   /**
    * The HTTP method to call the endpoint with.
+   * 
+   * Valid values are as specified for `method` parameter passed to [Axios](https://www.npmjs.com/package/axios).
    * 
    * Default is `GET`.
    */
@@ -42,21 +56,19 @@ export interface ApiCallOptions {
 export class Api {
   protected _axios: AxiosInstance
   protected _baseUrl: string
-  protected _defaultOptions: ApiCallOptions
+  protected _defaultOptions: ApiOptions
 
   /**
    * @param baseUrl The root endpoint for all API requests.
    * @param options Options to apply to all requests.
    */
-  constructor(baseUrl: string, options?: ApiCallOptions) {
+  constructor(baseUrl: string, options?: ApiOptions) {
     this._baseUrl = baseUrl
 
     this._defaultOptions = {
       timeout: options?.timeout || 3000,
       responseType: options?.responseType || 'json',
       headers: options?.headers || {},
-      data: options?.data,
-      method: options?.method || 'GET',
     }
 
     this._axios = axios.create({
@@ -67,8 +79,11 @@ export class Api {
   /**
    * Make a request.
    * 
+   * Note that any request options supplied via the `options` parameter will override those 
+   * set in the constructor.
+   * 
    * @param urlPath The API path relative to the root endpoint configured in the constructor.
-   * @param options Call options. These will override any options set in the constructor.
+   * @param options Request options. Will override those set in the constructor.
    * @return {any}
    * @throws {Error} If the response was an error.
    */
@@ -76,8 +91,11 @@ export class Api {
     let ret: any
 
     const finalOpts = {
-      ...this._defaultOptions,
-      ...options,
+      timeout: options?.timeout || this._defaultOptions.timeout,
+      responseType: options?.responseType || this._defaultOptions.responseType,
+      headers: Object.assign({}, this._defaultOptions.headers, options?.headers),
+      data: options?.data || undefined,
+      method: options?.method || 'GET'
     }
 
     ret = await this._axios.request({

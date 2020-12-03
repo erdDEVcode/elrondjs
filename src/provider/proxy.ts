@@ -1,4 +1,4 @@
-import { Api, TransactionTracker } from '../lib'
+import { Api, ApiCallOptions, TransactionTracker } from '../lib'
 
 import { 
   Provider,
@@ -40,6 +40,7 @@ export const parseRawTransaction = (tx: any): TransactionOnChain => {
   }
 }
 
+
 /**
  * A [[Provider]] which speaks to an Elrond Proxy endpoint.
  */
@@ -48,9 +49,10 @@ export class ProxyProvider extends Api implements Provider {
    * Constructor.
    * 
    * @param api Proxy endpoint base URL.
+   * @param options Options to apply to all requests.
    */
-  constructor(api: string) {
-    super(api)
+  constructor(api: string, options?: ApiCallOptions) {
+    super(api, options)
   }
 
   /**
@@ -100,11 +102,11 @@ export class ProxyProvider extends Api implements Provider {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
+      data: JSON.stringify({
         scAddress: params.contractAddress,
         funcName: params.functionName,
         args: params.args,
-      })
+      }),
     })
 
     const { data } = this._parseResponse(ret, `Error querying contract`)
@@ -118,7 +120,7 @@ export class ProxyProvider extends Api implements Provider {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
-      body: JSON.stringify(signedTx)
+      data: JSON.stringify(signedTx)
     })
 
     const { txHash: hash } = this._parseResponse(ret, 'Error sending transaction')

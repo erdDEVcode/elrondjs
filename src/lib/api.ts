@@ -1,12 +1,11 @@
-import axios, { AxiosInstance } from 'axios'
-
+import axios, { AxiosInstance, AxiosRequestConfig, ResponseType, Method } from 'axios'
 
 /**
  * Options for API calls.
  */
 export interface ApiCallOptions {
   /**
-   * Milliseconds to count until request automatically times out.
+   * Milliseconds to count until the request automatically times out.
    * 
    * Default is `3000`.
    */
@@ -18,7 +17,7 @@ export interface ApiCallOptions {
    * 
    * Default is `json`.
    */
-  responseType?: string,
+  responseType?: ResponseType,
   /**
    * Additional HTTP headers to pass along with the request.
    */
@@ -26,13 +25,13 @@ export interface ApiCallOptions {
   /**
    * Body to submit along with the request.
    */
-  body?: string,
+  data?: string,
   /**
    * The HTTP method to call the endpoint with.
    * 
    * Default is `GET`.
    */
-  method?: "GET" | "POST",
+  method?: Method,
 }
 
 /**
@@ -43,12 +42,22 @@ export interface ApiCallOptions {
 export class Api {
   protected _axios: AxiosInstance
   protected _baseUrl: string
+  protected _defaultOptions: ApiCallOptions
 
   /**
    * @param baseUrl The root endpoint for all API requests.
+   * @param options Options to apply to all requests.
    */
-  constructor(baseUrl: string) {
+  constructor(baseUrl: string, options?: ApiCallOptions) {
     this._baseUrl = baseUrl
+
+    this._defaultOptions = {
+      timeout: options?.timeout || 3000,
+      responseType: options?.responseType || 'json',
+      headers: options?.headers || {},
+      data: options?.data,
+      method: options?.method || 'GET',
+    }
 
     this._axios = axios.create({
       baseURL: baseUrl,
@@ -59,19 +68,16 @@ export class Api {
    * Make a request.
    * 
    * @param urlPath The API path relative to the root endpoint configured in the constructor.
-   * @param options Call options.
+   * @param options Call options. These will override any options set in the constructor.
    * @return {any}
    * @throws {Error} If the response was an error.
    */
-  protected async _call(urlPath: string, options: ApiCallOptions = {}) {
+  protected async _call(urlPath: string, options?: ApiCallOptions) {
     let ret: any
 
     const finalOpts = {
-      timeout: options.timeout || 3000,
-      reponseType: options.responseType || 'json',
-      headers: options.headers || {},
-      data: options.body || undefined,
-      method: options.method || 'GET',
+      ...this._defaultOptions,
+      ...options,
     }
 
     ret = await this._axios.request({

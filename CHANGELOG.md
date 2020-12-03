@@ -1,3 +1,10 @@
+## [1.6.1](https://github.com/erdDEVcode/elrondjs/compare/v1.6.0...v1.6.1) (2020-12-03)
+
+
+### Bug Fixes
+
+* invoke() should mergeOptions first ([fc65172](https://github.com/erdDEVcode/elrondjs/commit/fc651721c00cc0d97ac74044e6072ec3af0ad391))
+
 # [1.6.0](https://github.com/erdDEVcode/elrondjs/compare/v1.5.1...v1.6.0) (2020-11-29)
 
 ## [1.5.1](https://github.com/erdDEVcode/elrondjs/compare/v1.5.0...v1.5.1) (2020-11-29)

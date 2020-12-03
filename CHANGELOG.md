@@ -1,3 +1,10 @@
+# [1.7.0](https://github.com/erdDEVcode/elrondjs/compare/v1.6.1...v1.7.0) (2020-12-03)
+
+
+### Features
+
+* enable timeout overrides for api calls ([992e9bd](https://github.com/erdDEVcode/elrondjs/commit/992e9bde4c0c029d7bdfc381549c3c85645534a0))
+
 ## [1.6.1](https://github.com/erdDEVcode/elrondjs/compare/v1.6.0...v1.6.1) (2020-12-03)
 
 

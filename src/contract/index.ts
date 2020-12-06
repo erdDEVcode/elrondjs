@@ -4,18 +4,13 @@ import {
   ContractQueryResult, 
   ContractQueryResultParseOptions, 
   ContractQueryResultDataType, 
-  ContractOptions,
+  TransactionOptions,
   Transaction,
   TransactionReceipt,
 } from '../common'
 
+import { TransactionOptionsBase, joinDataArguments } from '../lib'
 
-/**
- * @internal
- */
-const joinArguments = (...args: string[]) => {
-  return args.join('@')
-}
 
 /**
  * @internal
@@ -60,14 +55,14 @@ export const parseQueryResult = (result: ContractQueryResult, options: ContractQ
  * This is the base class of transactions related to deploying, upgrading and calling contracts.
  */
 abstract class ContractTransaction {
-  protected _options?: ContractOptions
+  protected _options?: TransactionOptions
 
   /**
    * Constructor.
    * 
    * @param options Options for when interacting with a contract. 
    */
-  constructor(options?: ContractOptions) {
+  constructor(options?: TransactionOptions) {
     this._options = options
   }
 
@@ -100,7 +95,7 @@ class ContractInvocation extends ContractTransaction {
    * @param args Arguments to pass to function.
    * @param options Transaction options.
    */
-  constructor(address: string, func: string, args: string[], options?: ContractOptions) {
+  constructor(address: string, func: string, args: string[], options?: TransactionOptions) {
     super(options)
     this._address = address
     this._func = func
@@ -108,7 +103,7 @@ class ContractInvocation extends ContractTransaction {
   }
 
   public getTransactionDataString(): string {
-    return joinArguments(this._func, ...this._args)
+    return joinDataArguments(this._func, ...this._args)
   }
 
   public async toTransaction(): Promise<Transaction> {
@@ -144,9 +139,19 @@ class ContractInvocation extends ContractTransaction {
 /**
  * Interfaces for working with contracts.
  */
-export class Contract {
+export class Contract extends TransactionOptionsBase {
   protected _address: string = ''
-  protected _options?: ContractOptions
+
+  /**
+   * Constructor.
+   * 
+   * @param address Contract address.
+   * @param options Transaction options.
+   */
+  public constructor(address: string, options?: TransactionOptions) {
+    super(options)
+    this._address = address
+  }
 
   /**
    * Get instance for contract at given address.
@@ -154,14 +159,13 @@ export class Contract {
    * The `options` parameter should typically at least contain `sender`, `provider` and `signer` so that 
    * subsequent interactions can make use of these.
    * 
+   * If `options.provider` is set then this checks to ensure that contract code is present at the 
+   * given address.
+   * 
    * @param address Contract address.
-   * @param options Base options for all subsequent operations.
+   * @param options Base options for all subsequent transactions and contract querying.
    */
-  public static async at(address: string, options?: ContractOptions): Promise<Contract> {
-    const c = new Contract()
-    c._address = address
-    c._options = options
-
+  public static async at(address: string, options?: TransactionOptions): Promise<Contract> {
     // if provider is given then confirm that address contains code!
     if (options?.provider) {
       try {
@@ -175,7 +179,7 @@ export class Contract {
       }
     }
 
-    return c
+    return new Contract(address, options)
   }
 
   /**
@@ -187,7 +191,7 @@ export class Contract {
    * @param args Arguments to pass to function.
    * @param options Options which will get merged with the base options set in the constructor.
    */
-  async query(func: string, args?: string[], options?: ContractOptions): Promise<ContractQueryResult> {
+  async query(func: string, args?: string[], options?: TransactionOptions): Promise<ContractQueryResult> {
     const mergedOptions = this._mergeTransactionOptions(options, 'provider')
 
     return await mergedOptions.provider!.queryContract({
@@ -204,7 +208,7 @@ export class Contract {
    * @param args Arguments to pass to function.
    * @param options Options which will get merged with the base options set in the constructor.
    */
-  async invoke(func: string, args?: string[], options?: ContractOptions): Promise<TransactionReceipt> {
+  async invoke(func: string, args?: string[], options?: TransactionOptions): Promise<TransactionReceipt> {
     const mergedOptions = this._mergeTransactionOptions(options, 'signer', 'provider')
 
     const obj = this.createInvocation(func, args || [], mergedOptions)
@@ -222,31 +226,7 @@ export class Contract {
    * @param args Arguments to pass to function.
    * @param options Options which will get merged with the base options set in the constructor.
    */
-  createInvocation(func: string, args: string[], options?: ContractOptions): ContractTransaction {
+  createInvocation(func: string, args: string[], options?: TransactionOptions): ContractTransaction {
     return new ContractInvocation(this._address, func, args, this._mergeTransactionOptions(options, 'provider'))
-  }
-
-  /**
-   * Merge given options with options set in the constructor.
-   * 
-   * The options in the constructor will be extended with the given options and a new object will 
-   * be returned, leaving the originals unmodified.
-   * 
-   * @param options Options to merge.
-   * @param fieldsToCheck Fields to check the presence of. If any of these fields are missing an error will be thrown.
-   * @throws {Errors} If any field listed in `fieldsToCheck` is absent in the final merged options object.
-   */
-  protected _mergeTransactionOptions(options?: ContractOptions, ...fieldsToCheck: string[]): ContractOptions {
-    const mergedOptions = Object.assign({}, this._options, options)
-
-    if (fieldsToCheck.length) {
-      fieldsToCheck.forEach(field => {
-        if (!(mergedOptions as any)[field]) {
-          throw new Error(`${field} must be set`)
-        }
-      })
-    }
-
-    return mergedOptions
   }
 }

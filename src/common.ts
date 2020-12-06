@@ -345,12 +345,12 @@ export interface Wallet extends Signer {
 }
 
 
+
+
 /**
- * Options for interacting with a contract.
- * 
- * This includes default transaction settings as well as the [[Provider]] to use for contract querying. 
+ * Options for interacting sending transactions.
  */
-export interface ContractOptions {
+export interface TransactionOptions {
   /**
    * Sender bech32 address.
    */
@@ -378,11 +378,74 @@ export interface ContractOptions {
    */
   meta?: object,
   /**
-   * The [[Provider]] to use.
+   * The provider to use.
    */
   provider?: Provider,
   /**
-   * The signer to use.
+   * The transaction signer to use.
    */
   signer?: Signer,
+}
+
+
+
+/**
+ * ESDT token configuration.
+ */
+export interface TokenConfig {
+  /**
+   * Whether more units of this token can be minted by the owner after initial issuance, increasing the supply.
+   */
+  canMint: boolean,
+  /**
+   * Whether users may burn some of their tokens, reducing the supply.
+   */
+  canBurn: boolean,
+  /**
+   * Whether the owner may prevent all transactions of the token, apart from minting and burning.
+   */
+  canPause: boolean,
+  /**
+   * Whether the owner may freeze a specific account, preventing transfers to and from that account.
+   */
+  canFreeze: boolean,
+  /**
+   * Whether the owner may wipe out the tokens held by a frozen account, reducing the supply.
+   */
+  canWipe: boolean,
+  /**
+   * Whether the owner may transfer ownership of the token to another account.
+   */
+  canChangeOwner: boolean,
+  /**
+   * Whether the owner may change the token configuration.
+   */
+  canUpgrade: boolean,
+}
+
+
+/**
+ * ESDT token information.
+ */
+export interface TokenInfo {
+  /**
+   * Token identifier.
+   */
+  id: string,
+  /**
+   * The user-friendly name of the token.
+   */
+  name: string,
+  /**
+   * The ticker name of the token.
+   */
+  ticker: string,
+  /**
+   * The bech32 address of the owner of this token.
+   */
+  owner: string,
+  /**
+   * 
+   */
+  config: TokenConfig,
 }

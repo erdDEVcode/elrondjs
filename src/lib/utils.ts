@@ -1,4 +1,10 @@
 /**
+ * Common argument delimiter in elrond.
+ */
+export const ARGS_DELIMITER = '@'
+
+
+/**
  * Convert ASCII string to its HEX representation.
  * @param arg ASCII string.
  */

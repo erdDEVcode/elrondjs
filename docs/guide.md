@@ -336,13 +336,13 @@ const { hash } = await contract.invoke('method name', [ /* method arguments */])
 await provider.waitForTransaction(hash)
 ```
 
-Although `invoke()` does everything needed to send a transation you can also choose to do the steps manually by obtaining a  `ContractTransaction` instance:
+Although `invoke()` does everything needed to send a transation you can also choose to do the steps manually by obtaining a  `TransactionBuilder` instance:
 
 ```js
-// get ContractInvocation (instance of a ContractTransaction)
-const contractTransaction = await contract.createInvocation('method name', [ /* method arguments */ ])
+// get ContractInvocationBuilder (instance of a TransactionBuilder)
+const contractInvocationBuilder = await contract.createInvocation('method name', [ /* method arguments */ ])
 // get Transaction object
-const tx = await contractTransaction.toTransaction()
+const tx = await contractInvocationBuilder.toTransaction()
 // sign it
 const signedTx = await wallet.signTransaction(tx, provider)
 // send it

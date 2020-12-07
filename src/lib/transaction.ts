@@ -1,4 +1,5 @@
-import { Provider, TransactionOptions, TransactionStatus } from "../common"
+import { Provider, Transaction, TransactionOptions, TransactionStatus } from "../common"
+import { ARGS_DELIMITER } from "./utils"
 
 
 /**
@@ -102,12 +103,74 @@ export abstract class TransactionOptionsBase {
 
 
 
+
+/**
+ * Generic transaction builder base class.
+ */
+export abstract class TransactionBuilder {
+  protected _options?: TransactionOptions
+
+  /**
+   * Constructor.
+   * 
+   * @param options Transaction options.
+   */
+  constructor(options?: TransactionOptions) {
+    this._options = options
+  }
+
+  /**
+   * Get the `data` string representation of this transaction.
+   */
+  public abstract getTransactionDataString(): string
+
+  /**
+   * Get `receiver` address.
+   */
+  public abstract getReceiverAddress(): string
+
+  /**
+   * Get signable transaction representation of this transaction.
+   */
+
+  public async toTransaction(): Promise<Transaction> {
+    if (!this._options) {
+      throw new Error('Execution options must be set')
+    }
+
+    if (!this._options?.sender) {
+      throw new Error('Sender must be set')
+    }
+
+    if (!this._options?.provider) {
+      throw new Error('Provider must be set')
+    }
+
+    const data = this.getTransactionDataString()
+    const networkConfig = await this._options!.provider.getNetworkConfig()
+    const gasPrice = networkConfig.minGasPrice
+    const gasLimit = networkConfig.minGasLimit + networkConfig.gasPerDataByte * data.length
+
+    return {
+      sender: this._options!.sender,
+      receiver: this.getReceiverAddress(),
+      value: this._options!.value || '0',
+      gasPrice: this._options!.gasPrice || gasPrice,
+      gasLimit: this._options!.gasLimit || gasLimit,
+      data,
+      meta: this._options!.meta,
+    }
+  }
+}
+
+
+
 /**
  * Join arguments for transaction data field.
  * @internal
  */
 export const joinDataArguments = (...args: string[]) => {
-  return args.join('@')
+  return args.join(ARGS_DELIMITER)
 }
 
 

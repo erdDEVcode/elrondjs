@@ -3,49 +3,99 @@ import {
   TokenConfig,
   TokenInfo,
   TransactionReceipt,
+  ContractQueryResultDataType,
+  Transaction,
 } from '../common'
 
 
-import { stringToHex, numberToHex, addressToHexString } from '../lib'
+import { stringToHex, numberToHex, addressToHexString, ARGS_DELIMITER, joinDataArguments, TransactionOptionsBase, TransactionBuilder } from '../lib'
 
-import { Contract } from '../contract'
+import { Contract, parseQueryResult } from '../contract'
 
 
 
 /**
- * Metachain contract which handles ESDT token operations.
- * @internal
+ * Address of metachain contract which handles ESDT token issuance and all other operations.
  */
 const METACHAIN_TOKEN_CONTRACT = 'erd1qqqqqqqqqqqqqqqpqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzllls8a5w6u'
 
 
 /**
- * Gas limit to use for most token operations.
+ * Gas limit to use for most token management operations.
  * @internal
  */
-const TOKEN_MGMG_STANDARD_GAS_COST = 51000000
+const TOKEN_MGMT_STANDARD_GAS_COST = 51000000
+
+
+
+/**
+ * Builder for token transfer transactions.
+ */
+class TokenTransferBuilder extends TransactionBuilder {
+  protected _receiver: string
+  protected _tokenId: string
+  protected _amount: number
+
+
+  /**
+   * Constructor.
+   * 
+   * @param receiver Address to transfer to.
+   * @param tokenId Id of token.
+   * @param amount No. of tokens to transfer.
+   * @param options Transaction options.
+   */
+  constructor(receiver: string, tokenId: string, amount: number, options?: TransactionOptions) {
+    super(options)
+    this._receiver = receiver
+    this._tokenId = tokenId
+    this._amount = amount
+  }
+
+  public getTransactionDataString(): string {
+    return joinDataArguments(`ESDTTransfer`, stringToHex(this._tokenId), numberToHex(this._amount))
+  }
+
+  public getReceiverAddress(): string {
+    return this._receiver
+  }
+}
 
 
 
 /**
  * Interface for working with ESDT tokens.
  */
-export class Token {
-  protected _name: string
-  protected _ticker: string
+export class Token extends TransactionOptionsBase {
+  protected _id: string
   protected _contractInstance: Contract
 
   /**
    * Constructor.
    * 
-   * @param name Token name.
-   * @param ticker Ticker name.
+   * @param id Token identifier.
    * @param contractInstance `Contract` instance for performing operations.
+   * @param options Base transaction options.
    */
-  private constructor (name: string, ticker: string, contractInstance: Contract) {
-    this._name = name
-    this._ticker = ticker
+  private constructor (id: string, contractInstance: Contract, options?: TransactionOptions) {
+    super(options)
+    this._id = id
     this._contractInstance = contractInstance
+  }
+
+
+  /**
+   * Get all token identifiers in system.
+   * @param options Transaction options for interacting with the blockchain. These will be the default options used for all subsequent operations.
+   */
+  public static async getAllTokenIds(options: TransactionOptions): Promise<string[]> {
+    const c = new Contract(METACHAIN_TOKEN_CONTRACT, options)
+
+    const ret = await c.query('getAllESDTTokens')
+
+    const tokenListStr = (parseQueryResult(ret, { type: ContractQueryResultDataType.STRING }) as string)
+
+    return tokenListStr.split(ARGS_DELIMITER)
   }
 
 
@@ -60,7 +110,7 @@ export class Token {
    * @param initialSupply Initial total supply of the token.
    * @param options Transaction options for interacting with the blockchain. These will be the default options used for all subsequent operations.
    */
-  public static async createNew(name: string, ticker: string, initialSupply: number, options: TransactionOptions): Promise<Token> {
+  public static async new(name: string, ticker: string, initialSupply: number, options: TransactionOptions): Promise<Token> {
     const c = new Contract(METACHAIN_TOKEN_CONTRACT, options)
     
     const tx = await c.invoke('issue', [
@@ -68,23 +118,85 @@ export class Token {
       stringToHex(ticker),
       numberToHex(initialSupply)
     ], {
-      gasLimit: TOKEN_MGMG_STANDARD_GAS_COST,
+      gasLimit: TOKEN_MGMT_STANDARD_GAS_COST,
       value: '5000000000000000000' /* 5 eGLD */
     })
 
     await options.provider!.waitForTransaction(tx.hash)
 
-    return new Token(name, ticker, c)
+    const id = 'foo' // TODO: need to obtain token id from transaction results and then 
+
+    return Token.load(id, options)
   }
 
+
+
+  /**
+   * Load a token.
+   * 
+   * This will throw an error if the given token doesn't exist.
+   * 
+   * @param id Token identifier.
+   * @param options Transaction options for interacting with the blockchain. These will be the default options used for all subsequent operations.
+   */
+  public static async load(id: string, options: TransactionOptions): Promise<Token> {
+    const c = new Contract(METACHAIN_TOKEN_CONTRACT, options)
+
+    const t = new Token(id, c, options)
+
+    await t.getInfo()
+    
+    return t
+  }
+  
+  
 
   /**
    * Get token information.
    * 
    * @param options Transaction options to override the default ones with.
    */
-  public async getInfo(options?: TransactionOptions): Promise<TokenInfo | null> {
-    throw new Error('Not yet implemented!')
+  public async getInfo(options?: TransactionOptions): Promise<TokenInfo> {
+    const ret = await this._contractInstance.query('getTokenProperties', [ 
+      stringToHex(this._id)
+    ], options)
+
+    return {
+      id: this._id,
+      name: (parseQueryResult(ret, { type: ContractQueryResultDataType.STRING, index: 0 }) as string),
+      owner: (parseQueryResult(ret, { type: ContractQueryResultDataType.STRING, index: 1 }) as string),
+      supply: (parseQueryResult(ret, { type: ContractQueryResultDataType.STRING, index: 2 }) as string),
+      paused: (parseQueryResult(ret, { type: ContractQueryResultDataType.STRING, index: 4 }) as string).includes('true'),
+      config: {
+        canUpgrade: (parseQueryResult(ret, { type: ContractQueryResultDataType.STRING, index: 5 }) as string).includes('true'),
+        canMint: (parseQueryResult(ret, { type: ContractQueryResultDataType.STRING, index: 6 }) as string).includes('true'),
+        canBurn: (parseQueryResult(ret, { type: ContractQueryResultDataType.STRING, index: 7 }) as string).includes('true'),
+        canChangeOwner: (parseQueryResult(ret, { type: ContractQueryResultDataType.STRING, index: 8 }) as string).includes('true'),
+        canPause: (parseQueryResult(ret, { type: ContractQueryResultDataType.STRING, index: 9 }) as string).includes('true'),
+        canFreeze: (parseQueryResult(ret, { type: ContractQueryResultDataType.STRING, index: 10 }) as string).includes('true'),
+        canWipe: (parseQueryResult(ret, { type: ContractQueryResultDataType.STRING, index: 11 }) as string).includes('true'),
+      }
+    }
+  }
+
+
+  /**
+   * Transfer tokens to another address.
+   * 
+   * @param to Address to transfer to.
+   * @param amount No. of tokens to transfer.
+   * @param options Transaction options to override the default ones with.
+   */
+  public async transfer(to: string, amount: number, options?: TransactionOptions): Promise<TransactionReceipt> {
+    const opts = this._mergeTransactionOptions(options, 'sender', 'provider', 'signer')
+
+    const builder = new TokenTransferBuilder(to, this._id, amount, opts)
+
+    const tx = await builder.toTransaction()
+
+    const signedTx = await opts.signer!.signTransaction(tx, opts.provider!)
+    
+    return await opts.provider!.sendSignedTransaction(signedTx)
   }
 
 
@@ -95,10 +207,10 @@ export class Token {
    */
   public async mint(newSupply: number, options?: TransactionOptions): Promise<TransactionReceipt> {
     return await this._contractInstance.invoke('mint', [
-      stringToHex(this._name),
+      stringToHex(this._id),
       numberToHex(newSupply)
     ], {
-      gasLimit: TOKEN_MGMG_STANDARD_GAS_COST,
+      gasLimit: TOKEN_MGMT_STANDARD_GAS_COST,
       ...options
     })
   }
@@ -110,10 +222,10 @@ export class Token {
    */
   public async burn(amount: number, options?: TransactionOptions): Promise<TransactionReceipt> {
     return await this._contractInstance.invoke('ESDTburn', [
-      stringToHex(this._name),
+      stringToHex(this._id),
       numberToHex(amount)
     ], {
-      gasLimit: TOKEN_MGMG_STANDARD_GAS_COST,
+      gasLimit: TOKEN_MGMT_STANDARD_GAS_COST,
       ...options
     })
   }
@@ -125,9 +237,9 @@ export class Token {
    */
   public async pause(options?: TransactionOptions): Promise<TransactionReceipt> {
     return await this._contractInstance.invoke('pause', [
-      stringToHex(this._name),
+      stringToHex(this._id),
     ], {
-      gasLimit: TOKEN_MGMG_STANDARD_GAS_COST,
+      gasLimit: TOKEN_MGMT_STANDARD_GAS_COST,
       ...options
     })
   }
@@ -139,9 +251,9 @@ export class Token {
    */
   public async unPause(options?: TransactionOptions): Promise<TransactionReceipt> {
     return await this._contractInstance.invoke('unPause', [
-      stringToHex(this._name),
+      stringToHex(this._id),
     ], {
-      gasLimit: TOKEN_MGMG_STANDARD_GAS_COST,
+      gasLimit: TOKEN_MGMT_STANDARD_GAS_COST,
       ...options
     })
   }
@@ -153,10 +265,10 @@ export class Token {
    */
   public async freeze(address: string, options?: TransactionOptions): Promise<TransactionReceipt> {
     return await this._contractInstance.invoke('freeze', [
-      stringToHex(this._name),
+      stringToHex(this._id),
       addressToHexString(address),
     ], {
-      gasLimit: TOKEN_MGMG_STANDARD_GAS_COST,
+      gasLimit: TOKEN_MGMT_STANDARD_GAS_COST,
       ...options
     })
   }
@@ -168,10 +280,10 @@ export class Token {
    */
   public async unFreeze(address: string, options?: TransactionOptions): Promise<TransactionReceipt> {
     return await this._contractInstance.invoke('unFreeze', [
-      stringToHex(this._name),
+      stringToHex(this._id),
       addressToHexString(address),
     ], {
-      gasLimit: TOKEN_MGMG_STANDARD_GAS_COST,
+      gasLimit: TOKEN_MGMT_STANDARD_GAS_COST,
       ...options
     })
   }
@@ -183,10 +295,10 @@ export class Token {
    */
   public async wipe(address: string, options?: TransactionOptions): Promise<TransactionReceipt> {
     return await this._contractInstance.invoke('wipe', [
-      stringToHex(this._name),
+      stringToHex(this._id),
       addressToHexString(address),
     ], {
-      gasLimit: TOKEN_MGMG_STANDARD_GAS_COST,
+      gasLimit: TOKEN_MGMT_STANDARD_GAS_COST,
       ...options
     })
   }
@@ -198,10 +310,10 @@ export class Token {
    */
   public async changeOwner(newOwner: string, options?: TransactionOptions): Promise<TransactionReceipt> {
     return await this._contractInstance.invoke('transferOwnership', [
-      stringToHex(this._name),
+      stringToHex(this._id),
       addressToHexString(newOwner),
     ], {
-      gasLimit: TOKEN_MGMG_STANDARD_GAS_COST,
+      gasLimit: TOKEN_MGMT_STANDARD_GAS_COST,
       ...options
     })
   }
@@ -218,11 +330,11 @@ export class Token {
       return m
     }, [] as string[])
 
-    return await this._contractInstance.invoke('esdtControlChanges', [
-      stringToHex(this._name),
+    return await this._contractInstance.invoke('controlChanges', [
+      stringToHex(this._id),
       ...data,
     ], {
-      gasLimit: TOKEN_MGMG_STANDARD_GAS_COST,
+      gasLimit: TOKEN_MGMT_STANDARD_GAS_COST,
       ...options
     })
   }

@@ -9,13 +9,18 @@ import {
   TransactionReceipt,
 } from '../common'
 
-import { TransactionOptionsBase, joinDataArguments } from '../lib'
+import { TransactionOptionsBase, joinDataArguments, TransactionBuilder } from '../lib'
 
 
 /**
  * @internal
  */
 const queryResultValueToHex = (val: string) => `0x${Buffer.from(val, 'base64').toString('hex')}`  
+
+/**
+ * @internal
+ */
+const queryResultValueToString = (val: string) => `0x${Buffer.from(val, 'base64').toString('utf8')}`  
 
 /**
  * Parse a contracty query result.
@@ -42,6 +47,11 @@ export const parseQueryResult = (result: ContractQueryResult, options: ContractQ
         return queryResultValueToHex(val)
       }
     case ContractQueryResultDataType.STRING:
+        if (!val) {
+          return ''
+        } else {
+          return queryResultValueToString(val)
+        }
     default:
       return val
   }
@@ -49,39 +59,11 @@ export const parseQueryResult = (result: ContractQueryResult, options: ContractQ
 
 
 
-/**
- * Represents a contract-related transaction.
- * 
- * This is the base class of transactions related to deploying, upgrading and calling contracts.
- */
-abstract class ContractTransaction {
-  protected _options?: TransactionOptions
-
-  /**
-   * Constructor.
-   * 
-   * @param options Options for when interacting with a contract. 
-   */
-  constructor(options?: TransactionOptions) {
-    this._options = options
-  }
-
-  /**
-   * Get the `data` string representation of this contract-related transaction.
-   */
-  public abstract getTransactionDataString(): string
-
-  /**
-   * Get signable transaction representation of this contract-related transaction.
-   */
-  public abstract async toTransaction(): Promise<Transaction>
-}
-
 
 /**
- * Represents a transaction to call a contract function.
+ * Builder for contract invocation transactions.
  */
-class ContractInvocation extends ContractTransaction {
+class ContractInvocationBuilder extends TransactionBuilder {
   protected _address: string
   protected _func: string
   protected _args: string[]
@@ -106,33 +88,8 @@ class ContractInvocation extends ContractTransaction {
     return joinDataArguments(this._func, ...this._args)
   }
 
-  public async toTransaction(): Promise<Transaction> {
-    if (!this._options) {
-      throw new Error('Execution options must be set')
-    }
-
-    if (!this._options?.sender) {
-      throw new Error('Sender must be set')
-    }
-
-    if (!this._options?.provider) {
-      throw new Error('Provider must be set')
-    }
-
-    const data = this.getTransactionDataString()
-    const networkConfig = await this._options?.provider.getNetworkConfig()
-    const gasPrice = networkConfig.minGasPrice
-    const gasLimit = networkConfig.minGasLimit + networkConfig.gasPerDataByte * data.length
-
-    return {
-      sender: this._options!.sender,
-      receiver: this._address,
-      value: this._options!.value || '0',
-      gasPrice: this._options!.gasPrice || gasPrice,
-      gasLimit: this._options!.gasLimit || gasLimit,
-      data,
-      meta: this._options!.meta,
-    }
+  public getReceiverAddress(): string {
+    return this._address
   }
 }
 
@@ -226,7 +183,7 @@ export class Contract extends TransactionOptionsBase {
    * @param args Arguments to pass to function.
    * @param options Options which will get merged with the base options set in the constructor.
    */
-  createInvocation(func: string, args: string[], options?: TransactionOptions): ContractTransaction {
-    return new ContractInvocation(this._address, func, args, this._mergeTransactionOptions(options, 'provider'))
+  createInvocation(func: string, args: string[], options?: TransactionOptions): TransactionBuilder {
+    return new ContractInvocationBuilder(this._address, func, args, this._mergeTransactionOptions(options, 'provider'))
   }
 }

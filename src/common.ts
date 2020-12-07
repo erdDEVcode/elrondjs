@@ -437,15 +437,19 @@ export interface TokenInfo {
    */
   name: string,
   /**
-   * The ticker name of the token.
-   */
-  ticker: string,
-  /**
    * The bech32 address of the owner of this token.
    */
   owner: string,
   /**
-   * 
+   * Total supply.
+   */
+  supply: string,
+  /**
+   * Whether token is currently paused.
+   */
+  paused: boolean,
+  /**
+   * Token configuration.
    */
   config: TokenConfig,
 }

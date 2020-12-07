@@ -34,10 +34,14 @@ export const withLedger = async (transport: any, cb: Function) => {
       || msg.includes('is busy')
       || msg.includes('0x6e')
 
+    const openElsewhereError = 
+      msg.includes('unable to reset')
+      || msg.includes('unable to claim')
+
     if (notOpenError) {
       throw new Error('Please ensure that your Ledger is connected and that the Elrond app is open')
-    } else if (msg.includes('unable to reset the device')) {
-      throw new Error('Your ledger might already be in use with another browser tab or application')
+    } else if (openElsewhereError) {
+      throw new Error('Your ledger is already in use with another browser tab or application')
     } else if (msg.includes('0x6985')) {
       throw new Error('The transaction was rejected on the Ledger')
     } else {

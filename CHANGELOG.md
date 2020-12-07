@@ -1,3 +1,14 @@
+## [1.9.2](https://github.com/erdDEVcode/elrondjs/compare/v1.9.1...v1.9.2) (2020-12-07)
+
+## [1.9.1](https://github.com/erdDEVcode/elrondjs/compare/v1.9.0...v1.9.1) (2020-12-07)
+
+# [1.9.0](https://github.com/erdDEVcode/elrondjs/compare/v1.8.0...v1.9.0) (2020-12-07)
+
+
+### Features
+
+* tell user if their ledger is in use elsewhere ([339837f](https://github.com/erdDEVcode/elrondjs/commit/339837fd1a6296fc2576da6743f5bbd6bc2e6dee))
+
 # [1.8.0](https://github.com/erdDEVcode/elrondjs/compare/v1.7.0...v1.8.0) (2020-12-03)
 
 # [1.7.0](https://github.com/erdDEVcode/elrondjs/compare/v1.6.1...v1.7.0) (2020-12-03)

@@ -36,6 +36,8 @@ export const withLedger = async (transport: any, cb: Function) => {
 
     if (notOpenError) {
       throw new Error('Please ensure that your Ledger is connected and that the Elrond app is open')
+    } else if (msg.includes('unable to reset the device')) {
+      throw new Error('Your ledger might already be in use with another application')
     } else if (msg.includes('0x6985')) {
       throw new Error('The transaction was rejected on the Ledger')
     } else {

@@ -1,4 +1,4 @@
-import { Provider, Transaction, TransactionOptions, TransactionStatus } from "../common"
+import { Provider, Transaction, TransactionOnChain, TransactionOptions, TransactionStatus } from "../common"
 import { ARGS_DELIMITER } from "./utils"
 
 
@@ -26,7 +26,7 @@ export class TransactionTracker {
    * 
    * @throws {Error} If transaction fails or transaction tracking fails for whatever reason.
    */
-  async waitForCompletion (): Promise<void> {
+  async waitForCompletion(): Promise<TransactionOnChain> {
     return new Promise((resolve, reject) => {
       const _wait = () => {
         setTimeout(() => {
@@ -39,7 +39,7 @@ export class TransactionTracker {
                   )
                   break
                 case TransactionStatus.SUCCESS:
-                  resolve()
+                  resolve(txOnChain)
                   break
                 default:
                   _wait()

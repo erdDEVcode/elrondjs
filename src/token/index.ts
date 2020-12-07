@@ -110,7 +110,7 @@ export class Token extends TransactionOptionsBase {
    * @param initialSupply Initial total supply of the token.
    * @param options Transaction options for interacting with the blockchain. These will be the default options used for all subsequent operations.
    */
-  public static async new(name: string, ticker: string, initialSupply: number, options: TransactionOptions): Promise<Token> {
+  public static async new(name: string, ticker: string, initialSupply: number, options: TransactionOptions): Promise<void> {
     const c = new Contract(METACHAIN_TOKEN_CONTRACT, options)
     
     const tx = await c.invoke('issue', [
@@ -124,9 +124,10 @@ export class Token extends TransactionOptionsBase {
 
     await options.provider!.waitForTransaction(tx.hash)
 
-    const id = 'foo' // TODO: need to obtain token id from transaction results and then 
-
-    return Token.load(id, options)
+    // TODO: should return Token instance...
+    //
+    // const id = 'foo' // TODO: need to obtain token id from transaction results and then 
+    // return Token.load(id, options)
   }
 
 
@@ -164,6 +165,7 @@ export class Token extends TransactionOptionsBase {
     return {
       id: this._id,
       name: (parseQueryResult(ret, { type: ContractQueryResultDataType.STRING, index: 0 }) as string),
+      ticker: this._id.substr(0, this._id.indexOf('-')),
       owner: (parseQueryResult(ret, { type: ContractQueryResultDataType.STRING, index: 1 }) as string),
       supply: (parseQueryResult(ret, { type: ContractQueryResultDataType.STRING, index: 2 }) as string),
       paused: (parseQueryResult(ret, { type: ContractQueryResultDataType.STRING, index: 4 }) as string).includes('true'),

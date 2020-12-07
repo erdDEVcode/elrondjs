@@ -310,7 +310,7 @@ export interface Provider {
    *
    * @param txHash Hash of transaction to wait for.
    */
-  waitForTransaction: (txHash: string) => Promise<void>,
+  waitForTransaction: (txHash: string) => Promise<TransactionOnChain>,
   /**
    * Get information about a transaction.
    *
@@ -436,6 +436,10 @@ export interface TokenInfo {
    * The user-friendly name of the token.
    */
   name: string,
+  /**
+   * The ticker of the token.
+   */
+  ticker: string,
   /**
    * The bech32 address of the owner of this token.
    */

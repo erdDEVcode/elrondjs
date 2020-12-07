@@ -128,12 +128,12 @@ export class ProxyProvider extends Api implements Provider {
     return { signedTransaction: signedTx, hash }
   }
 
-  public async waitForTransaction(txHash: string): Promise<void> {
+  public async waitForTransaction(txHash: string): Promise<TransactionOnChain> {
     return new TransactionTracker(this, txHash).waitForCompletion()
   }
 
   public async getTransaction(txHash: string): Promise<TransactionOnChain> {
-    const ret = await this._call(`/transaction/${txHash}`, {
+    const ret = await this._call(`/transaction/${txHash}?withEvents=true`, {
       method: 'GET',
     })
 

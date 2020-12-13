@@ -84,8 +84,6 @@ To publish a new release:
 npm run release
 ```
 
-New releases are automatically published from the `master` branch via CI.
-
 ## License
 
 MIT

@@ -1,7 +1,14 @@
+import createKeccakHash from 'keccak'
+
 /**
  * Common argument delimiter in elrond.
  */
 export const ARGS_DELIMITER = '@'
+
+/**
+ * Arwen VM indicator value.
+ */
+export const ARWEN_VIRTUAL_MACHINE = '0500'
 
 
 /**
@@ -22,3 +29,11 @@ export const numberToHex = (arg: number): string => {
 }
 
 
+
+/**
+ * Get KECCAK hash of given input
+ * @param bytes The input.
+ */
+export const keccak = (bytes: Buffer): Buffer => {
+  return createKeccakHash("keccak256").update(bytes).digest()  
+}

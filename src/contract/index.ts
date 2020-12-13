@@ -7,9 +7,10 @@ import {
   TransactionOptions,
   Transaction,
   TransactionReceipt,
+  Provider,
 } from '../common'
 
-import { TransactionOptionsBase, joinDataArguments, TransactionBuilder } from '../lib'
+import { TransactionOptionsBase, joinDataArguments, TransactionBuilder, verifyTransactionOptions, ADDRESS_ZERO, ARWEN_VIRTUAL_MACHINE, addressToHexString, keccak, hexStringToAddress } from '../lib'
 
 
 /**
@@ -22,8 +23,21 @@ const queryResultValueToHex = (val: string) => `0x${Buffer.from(val, 'base64').t
  */
 const queryResultValueToString = (val: string) => `0x${Buffer.from(val, 'base64').toString('utf8')}`  
 
+
 /**
- * Parse a contracty query result.
+ * Receipt obtained when deploying a contract.
+ */
+interface ContractDeploymentTransactionReceipt extends TransactionReceipt {
+  /**
+   * Contract instance for interacting with the deployed contract.
+   * 
+   * This is only useful if the deployment transaction succeeds.
+   */
+  contract: Contract,
+}
+
+/**
+ * Parse a contract query result.
  * 
  * @param result The query result.
  * @param options Parsing options.
@@ -59,6 +73,39 @@ export const parseQueryResult = (result: ContractQueryResult, options: ContractQ
 
 
 
+/**
+ * Builder for contract deployment transactions.
+ */
+class ContractDeploymentBuilder extends TransactionBuilder {
+  protected _code: string
+  protected _codeMetadata: string
+  protected _initArgs: string[]
+
+  /**
+   * Constructor.
+   * 
+   * @param code Contract bytecode code.
+   * @param codeMetadata Contract metadata.
+   * @param initArgs Arguments for `init()` method.
+   * @param options Transaction options.
+   */
+  constructor(code: string, codeMetadata: string, initArgs: string[], options?: TransactionOptions) {
+    super(options)
+    this._code = code
+    this._codeMetadata = codeMetadata
+    this._initArgs = initArgs
+  }
+
+  public getTransactionDataString(): string {
+    return joinDataArguments(this._code, ARWEN_VIRTUAL_MACHINE, this._codeMetadata, ...this._initArgs)
+  }
+
+  public getReceiverAddress(): string {
+    return ADDRESS_ZERO
+  }
+}
+
+
 
 /**
  * Builder for contract invocation transactions.
@@ -67,7 +114,6 @@ class ContractInvocationBuilder extends TransactionBuilder {
   protected _address: string
   protected _func: string
   protected _args: string[]
-
 
   /**
    * Constructor.
@@ -138,6 +184,105 @@ export class Contract extends TransactionOptionsBase {
 
     return new Contract(address, options)
   }
+
+
+
+  /**
+   * Deploy a contract.
+   * 
+   * The `options` parameter should typically at least contain `sender`, `provider` and `signer` so that 
+   * subsequent interactions can make use of these.
+   * 
+   * @param code Contract bytecode code.
+   * @param codeMetadata Contract metadata.
+   * @param initArgs Arguments for `init()` method.
+   * @param options Base options for all subsequent transactions and contract querying.
+   */
+  public static async deploy(code: string, codeMetadata: string, initArgs: string[], options: TransactionOptions): Promise<ContractDeploymentTransactionReceipt> {
+    verifyTransactionOptions(options!, 'provider', 'signer', 'sender')
+
+    const { provider, sender, signer } = options!
+
+    // compute deployed address
+    const computedAddress = await Contract.computeDeployedAddress(sender!, options!.provider!)
+
+    // create deployment transaction
+    const obj = Contract.createDeployment(code, codeMetadata, initArgs, options)
+    const tx = await obj.toTransaction()
+
+    // sign and send
+    const signedTx = await signer!.signTransaction(tx, provider!)
+    const txReceipt = await provider!.sendSignedTransaction(signedTx)
+
+    return {
+      ...txReceipt,
+      contract: new Contract(computedAddress, options)
+    }
+  }
+  
+
+  /**
+   * Compute the would-be address of a deployed contract.
+   * 
+   * The address is computed deterministically, from the address of the deployer and their next transaction nonce.
+   * 
+   * @param deployer Address of contract deployer/owner in bech32 format.
+   * @param provider Provider instance.
+   */
+  static async computeDeployedAddress(deployer: string, provider: Provider): Promise<string> {
+    const { nonce } = await provider.getAddress(deployer)
+    return Contract.computeDeployedAddressWithNonce(deployer, nonce)
+  }
+  
+  
+
+  /**
+   * Compute the would-be address of a deployed contract.
+   * 
+   * The address is computed deterministically, from the address of the deployer and the given transaction nonce.
+   * 
+   * Based on: https://github.com/ElrondNetwork/elrond-sdk/blob/master/erdjs/src/smartcontracts/smartContract.ts#L216
+   * 
+   * @param deployer Address of contract deployer/owner in bech32 format.
+   * @param nonce Their nonce at the time of deployment.
+   */
+  static async computeDeployedAddressWithNonce (deployer: string, nonce: number): Promise<string> {
+    const initialPadding = Buffer.alloc(8, 0)
+    const ownerPubkey = Buffer.from(addressToHexString(deployer), 'hex')
+    const shardSelector = ownerPubkey.slice(30)
+    const ownerNonceBytes = Buffer.alloc(8)
+    ownerNonceBytes.writeBigUInt64LE(BigInt(nonce.valueOf()))
+    const bytesToHash = Buffer.concat([ownerPubkey, ownerNonceBytes])
+    const hash = keccak(bytesToHash)
+    const vmTypeBytes = Buffer.from(ARWEN_VIRTUAL_MACHINE, 'hex')
+    const addressBytes = Buffer.concat([
+      initialPadding,
+      vmTypeBytes,
+      hash.slice(10, 30),
+      shardSelector
+    ])
+    return hexStringToAddress(addressBytes.toString('hex'))
+  }
+  
+  
+  
+  /**
+   * Create a contract deployment transaction.
+   * 
+   * The `options` parameter should typically at least contain `sender`, `provider` and `signer` so that 
+   * subsequent interactions can make use of these.
+   * 
+   * @param code Contract bytecode code.
+   * @param codeMetadata Contract metadata.
+   * @param initArgs Arguments for `init()` method.
+   * @param options Transaction options.
+   */
+  public static createDeployment(code: string, codeMetadata: string, initArgs: string[], options?: TransactionOptions): TransactionBuilder {
+    verifyTransactionOptions(options!, 'provider')
+    return new ContractInvocationBuilder(code, codeMetadata, initArgs, options)
+  }
+
+
 
   /**
    * Query a function in read-only mode, without using a transaction.

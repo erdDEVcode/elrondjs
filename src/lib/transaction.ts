@@ -88,15 +88,7 @@ export abstract class TransactionOptionsBase {
    */
   protected _mergeTransactionOptions(options?: TransactionOptions, ...fieldsToCheck: string[]): TransactionOptions {
     const mergedOptions = Object.assign({}, this._options, options)
-
-    if (fieldsToCheck.length) {
-      fieldsToCheck.forEach(field => {
-        if (!(mergedOptions as any)[field]) {
-          throw new Error(`${field} must be set`)
-        }
-      })
-    }
-
+    verifyTransactionOptions(mergedOptions, ...fieldsToCheck)
     return mergedOptions
   }
 }
@@ -160,6 +152,28 @@ export abstract class TransactionBuilder {
       data,
       meta: this._options!.meta,
     }
+  }
+}
+
+
+/**
+ * Verify that given transaction options contain certain fields specified.
+ * 
+ * @param options Transaction options.
+ * @param fieldsToCheck The fields to check for.
+ * @throws {Error} if transaction options are empty or any required fields are missing.
+ */
+export const verifyTransactionOptions = (options?: TransactionOptions, ...fieldsToCheck: string[]) => {
+  if (!options) {
+    throw new Error('Transaction options are empty')
+  }
+
+  if (fieldsToCheck.length) {
+    fieldsToCheck.forEach(field => {
+      if (!(options as any)[field]) {
+        throw new Error(`${field} must be set`)
+      }
+    })
   }
 }
 

@@ -89,7 +89,14 @@ export class LedgerWallet extends WalletBase {
 
   protected async _sign(rawTx: Buffer): Promise<string> {
     return await withLedger(this._transport, async (erdLedgerInstance: any) => {
+      const { contractData } = await erdLedgerInstance.getAppConfiguration()
+
+      if ('1' != contractData) {
+        throw new Error('Please enable "Contract Data" in the Elrond ledger app settings.')
+      }
+
       const signedTx: string = await erdLedgerInstance.signTransaction(rawTx)
+
       return signedTx
     })
   }

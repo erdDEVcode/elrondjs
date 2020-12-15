@@ -1,3 +1,10 @@
+# [1.10.0](https://github.com/erdDEVcode/elrondjs/compare/v1.9.2...v1.10.0) (2020-12-15)
+
+
+### Features
+
+* detect when Contract Data is off in ledger hw ([9cc9e3e](https://github.com/erdDEVcode/elrondjs/commit/9cc9e3e3f8dc81bd382bcd2f7a146b9b34e61e98))
+
 ## [1.9.2](https://github.com/erdDEVcode/elrondjs/compare/v1.9.1...v1.9.2) (2020-12-07)
 
 ## [1.9.1](https://github.com/erdDEVcode/elrondjs/compare/v1.9.0...v1.9.1) (2020-12-07)

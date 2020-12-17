@@ -1,3 +1,10 @@
+# [1.11.0](https://github.com/erdDEVcode/elrondjs/compare/v1.10.0...v1.11.0) (2020-12-17)
+
+
+### Features
+
+* close transport after each use ([56e40ea](https://github.com/erdDEVcode/elrondjs/commit/56e40ea1edf9c559b45240ab5b6e9d1cb55ccdd4))
+
 # [1.10.0](https://github.com/erdDEVcode/elrondjs/compare/v1.9.2...v1.10.0) (2020-12-15)
 
 

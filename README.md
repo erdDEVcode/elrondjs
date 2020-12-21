@@ -84,7 +84,7 @@ To publish a new release:
 npm run release
 ```
 
-To run the tests, first run `npx nary` in a separate terminal to start a local test network. Then run:
+To run the tests, first run `npm run devnet` in a separate terminal to start a local test network. Then run:
 
 ```
 npm test

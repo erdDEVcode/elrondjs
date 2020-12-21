@@ -1,10 +1,11 @@
+import Transport from '@ledgerhq/hw-transport'
 import ElrondLedgerApp from '@elrondnetwork/hw-app-elrond'
 
 import { WalletBase } from "./base"
 
 export const withLedger = async (transport: any, cb: Function) => {
   try {
-    const ledgerTransport = await new Promise(async (resolve, reject) => {
+    const ledgerTransport: Transport = await new Promise(async (resolve, reject) => {
       const timer = setTimeout(() => {
         reject(new Error('Cannot write to Ledger transport'))
       }, 2000)
@@ -23,7 +24,12 @@ export const withLedger = async (transport: any, cb: Function) => {
       }
     })
 
-    return await cb(new ElrondLedgerApp(ledgerTransport))
+    // get the result and then close the transport
+    let ret = await cb(new ElrondLedgerApp(ledgerTransport))
+    
+    await ledgerTransport.close()
+    
+    return ret
   } catch (err) {
     console.error(err)
     const msg = err.message.toLowerCase()
@@ -89,7 +95,14 @@ export class LedgerWallet extends WalletBase {
 
   protected async _sign(rawTx: Buffer): Promise<string> {
     return await withLedger(this._transport, async (erdLedgerInstance: any) => {
+      const { contractData } = await erdLedgerInstance.getAppConfiguration()
+
+      if ('1' != contractData) {
+        throw new Error('Please enable "Contract Data" in the Elrond ledger app settings.')
+      }
+
       const signedTx: string = await erdLedgerInstance.signTransaction(rawTx)
+
       return signedTx
     })
   }

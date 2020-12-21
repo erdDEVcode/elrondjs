@@ -124,7 +124,6 @@ export abstract class TransactionBuilder {
   /**
    * Get signable transaction representation of this transaction.
    */
-
   public async toTransaction(): Promise<Transaction> {
     if (!this._options) {
       throw new Error('Execution options must be set')
@@ -138,22 +137,40 @@ export abstract class TransactionBuilder {
       throw new Error('Provider must be set')
     }
 
-    const data = this.getTransactionDataString()
-    const networkConfig = await this._options!.provider.getNetworkConfig()
-    const gasPrice = networkConfig.minGasPrice
-    const gasLimit = networkConfig.minGasLimit + networkConfig.gasPerDataByte * data.length
-
-    return {
+    const tx = await setDefaultGasPriceAndLimit({
       sender: this._options!.sender,
       receiver: this.getReceiverAddress(),
       value: this._options!.value || '0',
-      gasPrice: this._options!.gasPrice || gasPrice,
-      gasLimit: this._options!.gasLimit || gasLimit,
-      data,
+      data: this.getTransactionDataString(),
       meta: this._options!.meta,
-    }
+    }, this._options!.provider)
+
+    tx.gasPrice = this._options!.gasPrice || tx.gasPrice
+    tx.gasLimit = this._options!.gasLimit || tx.gasLimit
+
+    return tx
   }
 }
+
+
+/**
+ * Get a copy of given transaction with default gas price and limit set.
+ * 
+ * @param tx The transaction.
+ * @param provider The provider.
+ */
+export const setDefaultGasPriceAndLimit = async (tx: Transaction, provider: Provider): Promise<Transaction> => {
+  const networkConfig = await provider.getNetworkConfig()
+  const gasPrice = networkConfig.minGasPrice
+  const gasLimit = networkConfig.minGasLimit + networkConfig.gasPerDataByte * (tx.data || '').length
+
+  return {
+    ...tx,
+    gasPrice,
+    gasLimit,
+  }
+}
+
 
 
 /**

@@ -1,6 +1,6 @@
 {
   "name": "elrondjs",
-  "version": "1.9.2",
+  "version": "1.11.0",
   "description": "Javascript SDK for the Elrond blockchain with Typescript support.",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
@@ -29,16 +29,20 @@
     "@types/chai": "^4.2.14",
     "@types/chai-as-promised": "^7.1.3",
     "@types/jest": "^26.0.19",
+    "@types/keccak": "^3.0.1",
+    "@types/ledgerhq__hw-transport": "^4.21.3",
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
     "husky": "^4.3.0",
     "jest": "^26.6.3",
+    "narya": "^1.1.1",
     "semantic-release": "^17.2.2",
     "ts-jest": "^26.4.4",
     "typedoc": "^0.19.2",
     "typescript": "^4.0.5"
   },
   "scripts": {
+    "devnet": "narya",
     "build": "tsc && tsc -p tsconfig-esm.json",
     "dev": "tsc --watch",
     "build-docs": "rm -rf ./docs-api && typedoc",

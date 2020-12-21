@@ -5,12 +5,12 @@ import {
   ContractQueryResultParseOptions, 
   ContractQueryResultDataType, 
   TransactionOptions,
-  Transaction,
   TransactionReceipt,
   Provider,
+  ContractMetadata,
 } from '../common'
 
-import { TransactionOptionsBase, joinDataArguments, TransactionBuilder, verifyTransactionOptions, ADDRESS_ZERO, ARWEN_VIRTUAL_MACHINE, addressToHexString, keccak, hexStringToAddress } from '../lib'
+import { TransactionOptionsBase, joinDataArguments, TransactionBuilder, verifyTransactionOptions, ADDRESS_ZERO_BECH32, ARWEN_VIRTUAL_MACHINE, addressToHexString, keccak, hexStringToAddress, contractMetadataToString } from '../lib'
 
 
 /**
@@ -27,7 +27,7 @@ const queryResultValueToString = (val: string) => `0x${Buffer.from(val, 'base64'
 /**
  * Receipt obtained when deploying a contract.
  */
-interface ContractDeploymentTransactionReceipt extends TransactionReceipt {
+export interface ContractDeploymentTransactionReceipt extends TransactionReceipt {
   /**
    * Contract instance for interacting with the deployed contract.
    * 
@@ -77,31 +77,32 @@ export const parseQueryResult = (result: ContractQueryResult, options: ContractQ
  * Builder for contract deployment transactions.
  */
 class ContractDeploymentBuilder extends TransactionBuilder {
-  protected _code: string
-  protected _codeMetadata: string
+  protected _code: Buffer
+  protected _metadata: ContractMetadata
   protected _initArgs: string[]
 
   /**
    * Constructor.
    * 
-   * @param code Contract bytecode code.
-   * @param codeMetadata Contract metadata.
+   * @param code Contract bytecode.
+   * @param metadata Contract metadata.
    * @param initArgs Arguments for `init()` method.
    * @param options Transaction options.
    */
-  constructor(code: string, codeMetadata: string, initArgs: string[], options?: TransactionOptions) {
+  constructor(code: Buffer, metadata: ContractMetadata, initArgs: string[], options?: TransactionOptions) {
     super(options)
     this._code = code
-    this._codeMetadata = codeMetadata
+    this._metadata = metadata
     this._initArgs = initArgs
   }
 
   public getTransactionDataString(): string {
-    return joinDataArguments(this._code, ARWEN_VIRTUAL_MACHINE, this._codeMetadata, ...this._initArgs)
+    const metadata = contractMetadataToString(this._metadata)
+    return joinDataArguments(this._code.toString('hex'), ARWEN_VIRTUAL_MACHINE, metadata, ...this._initArgs)
   }
 
   public getReceiverAddress(): string {
-    return ADDRESS_ZERO
+    return ADDRESS_ZERO_BECH32
   }
 }
 
@@ -157,6 +158,13 @@ export class Contract extends TransactionOptionsBase {
   }
 
   /**
+   * Get contract address.
+   */
+  public get address (): string {
+    return this._address
+  }
+
+  /**
    * Get instance for contract at given address.
    * 
    * The `options` parameter should typically at least contain `sender`, `provider` and `signer` so that 
@@ -194,11 +202,11 @@ export class Contract extends TransactionOptionsBase {
    * subsequent interactions can make use of these.
    * 
    * @param code Contract bytecode code.
-   * @param codeMetadata Contract metadata.
+   * @param metadata Contract metadata.
    * @param initArgs Arguments for `init()` method.
    * @param options Base options for all subsequent transactions and contract querying.
    */
-  public static async deploy(code: string, codeMetadata: string, initArgs: string[], options: TransactionOptions): Promise<ContractDeploymentTransactionReceipt> {
+  public static async deploy(code: Buffer, metadata: ContractMetadata, initArgs: string[], options: TransactionOptions): Promise<ContractDeploymentTransactionReceipt> {
     verifyTransactionOptions(options!, 'provider', 'signer', 'sender')
 
     const { provider, sender, signer } = options!
@@ -207,7 +215,7 @@ export class Contract extends TransactionOptionsBase {
     const computedAddress = await Contract.computeDeployedAddress(sender!, options!.provider!)
 
     // create deployment transaction
-    const obj = Contract.createDeployment(code, codeMetadata, initArgs, options)
+    const obj = Contract.createDeployment(code, metadata, initArgs, options)
     const tx = await obj.toTransaction()
 
     // sign and send
@@ -216,7 +224,10 @@ export class Contract extends TransactionOptionsBase {
 
     return {
       ...txReceipt,
-      contract: new Contract(computedAddress, options)
+      contract: new Contract(computedAddress, {
+        ...options,
+        gasLimit: undefined, // reset gas limit
+      })
     }
   }
   
@@ -273,13 +284,13 @@ export class Contract extends TransactionOptionsBase {
    * subsequent interactions can make use of these.
    * 
    * @param code Contract bytecode code.
-   * @param codeMetadata Contract metadata.
+   * @param metadata Contract metadata.
    * @param initArgs Arguments for `init()` method.
    * @param options Transaction options.
    */
-  public static createDeployment(code: string, codeMetadata: string, initArgs: string[], options?: TransactionOptions): TransactionBuilder {
+  public static createDeployment(code: Buffer, metadata: ContractMetadata, initArgs: string[], options?: TransactionOptions): TransactionBuilder {
     verifyTransactionOptions(options!, 'provider')
-    return new ContractInvocationBuilder(code, codeMetadata, initArgs, options)
+    return new ContractDeploymentBuilder(code, metadata, initArgs, options)
   }
 
 

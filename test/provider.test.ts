@@ -2,7 +2,7 @@ import { WALLETS } from 'narya'
 
 import { BasicWallet, ProxyProvider, setDefaultGasPriceAndLimit } from '../dist/cjs'
 
-const { PROXY_ENDPOINT } = require('./utils')
+import { expect, PROXY_ENDPOINT } from './utils'
 
 describe('ProxyProvider', () => {
   let proxy: ProxyProvider
@@ -13,13 +13,13 @@ describe('ProxyProvider', () => {
 
   it('can get network config', async () => {
     const nc = await proxy.getNetworkConfig()
-    expect(nc.chainId).toEqual('local-testnet')
+    expect(nc.chainId).to.eql('local-testnet')
   })
 
   it('can get address details', async () => {
     const { bech32: address } = WALLETS.alice
     const account = await proxy.getAddress(address)
-    expect(account).toBeDefined()
+    expect(account).to.exist
     account.address.should.eql(address)
   })
 
@@ -36,10 +36,10 @@ describe('ProxyProvider', () => {
     }, proxy)
 
     const signedTx = await wallet1.signTransaction(tx, proxy)
-    expect(signedTx).toBeDefined()
+    expect(signedTx).to.exist
 
     const receipt = await proxy.sendSignedTransaction(signedTx)
-    expect(receipt.hash).toBeDefined()
+    expect(receipt.hash).to.exist
 
     await proxy.waitForTransaction(receipt.hash)
 
@@ -48,6 +48,6 @@ describe('ProxyProvider', () => {
     // TODO: check balance differences
     
     const txOnChain = await proxy.getTransaction(receipt.hash)
-    expect(txOnChain.raw).toBeDefined()
+    expect(txOnChain.raw).to.exist
   })
 })

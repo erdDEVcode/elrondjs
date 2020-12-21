@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosRequestConfig, ResponseType, Method } from 'axios'
+import axios, { AxiosInstance, AxiosRequestConfig, ResponseType, Method, AxiosError } from 'axios'
 
 
 /**
@@ -98,12 +98,16 @@ export class Api {
       method: options?.method || 'GET'
     }
 
-    ret = await this._axios.request({
-      url: urlPath,
-      ...finalOpts,
-    })
+    try {
+      ret = await this._axios.request({
+        url: urlPath,
+        ...finalOpts,
+      })
 
-    return this._responseTransformer(ret)
+      return this._responseTransformer(ret)
+    } catch (err) {
+      return this._responseTransformer(undefined, err)
+    }
   }
 
   /**
@@ -112,17 +116,26 @@ export class Api {
    * This gets passed the response of every request. Subclasses may override 
    * this to customize resposne handling.
    * 
-   * @param ret The Response.
+   * @param ret The response.
+   * @param error Request error that thrown.
    * @return {any} The transformed response.
    * @throws {Error} If the response was an error.
    */
-  protected async _responseTransformer(ret: any): Promise<any> {
-    const { data, error } = ret
-
+  protected async _responseTransformer(ret?: any, error?: AxiosError): Promise<any> {
     if (error) {
-      throw new Error(error.message)
-    }
+      if (error.response?.data?.error) {
+        throw new Error(error.response.data.error)
+      }
+    } else if (ret) {
+      const { data, error } = ret
 
-    return data || ret
+      if (error) {
+        throw new Error(error.message)
+      }
+
+      return data || ret
+    } else {
+      throw new Error('Invalid response transformer call')
+    }
   }
 }

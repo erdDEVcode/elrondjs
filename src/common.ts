@@ -56,6 +56,26 @@ export interface Address {
   code: string,
 }
 
+
+/**
+ * Contract metadata, used for when deploying/upgrading a contract.
+ */
+export interface ContractMetadata {
+  /**
+   * Whether the contract is upgradeable.
+   */
+  upgradeable?: boolean,
+  /**
+   * Whether other contracts can read this contract's data (without calling one of its pure functions).
+   */
+  readable?: boolean,
+  /**
+   * Whether the contract can receive eGLD and ESDT tokens via a transfer(without calling one of its methods).
+   */
+  payable?: boolean,
+}
+
+
 /**
  * Represents the parameters for querying a contract.
  */
@@ -146,6 +166,10 @@ export interface Transaction {
    * Denominated in the smallest unit (10^18).
    */
   value: string,
+  /** 
+   * The sender nonce to use.
+   */
+  nonce?: number,
   /**
    * The gas price.
    * 

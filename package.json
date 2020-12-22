@@ -48,7 +48,7 @@
     "build-docs": "rm -rf ./docs-api && typedoc",
     "prepublishOnly": "npm run build",
     "release": "semantic-release",
-    "test": "jest"
+    "test": "jest --runInBand"
   },
   "husky": {
     "hooks": {

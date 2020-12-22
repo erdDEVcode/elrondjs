@@ -58,4 +58,50 @@ describe('contracts', () => {
 
     expect(sum2).to.equal(8)
   })
+
+  it('can be found', async () => {
+    const c = await Contract.at(receipt.contract.address, {
+      provider,
+      signer,
+      sender,
+    })
+
+    const sum = parseQueryResult(await receipt.contract.query('getSum'), {
+      type: ContractQueryResultDataType.INT
+    })
+
+    expect(sum).to.equal(8)
+  })
+
+  describe.skip('and upgrades', () => {
+    it('are off by default', async () => {
+      await receipt.contract.upgrade(adderWasm, {}, {
+        gasLimit: 15000000
+      }).should.be.rejectedWith('test')
+    })
+
+    it('are on if deployed as upgradeable', async () => {
+      receipt = await Contract.deploy(
+        adderWasm,
+        {
+          upgradeable: true,
+        },
+        [numberToHex(3)],
+        {
+          provider,
+          signer,
+          sender,
+          gasLimit: 15000000,
+        }
+      )
+
+      await provider.waitForTransaction(receipt.hash)
+
+      await receipt.contract.upgrade(adderWasm, {
+        upgradeable: true,
+      }, {
+        gasLimit: 15000000
+      }).should.be.rejectedWith('test')
+    })
+  })
 })

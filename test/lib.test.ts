@@ -15,7 +15,7 @@ describe('Lib utils', () => {
   })
 
   it('number -> hex', async () => {
-    expect(numberToHex(666)).to.eql('29a')
+    expect(numberToHex(666)).to.eql('9a')
   })
 
   it('keccak', async () => {
@@ -23,7 +23,7 @@ describe('Lib utils', () => {
   })
 
   it('contract metadata -> string', async () => {
-    const _str = (a: number[]) => Buffer.from(a).toString()
+    const _str = (a: number[]) => `0${a[0]}0${a[1]}`
 
     expect(contractMetadataToString({})).to.eql(_str([0, 0]))
     expect(contractMetadataToString({ upgradeable: true })).to.eql(_str([1, 0]))

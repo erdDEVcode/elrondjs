@@ -89,7 +89,7 @@ class ContractDeploymentBuilder extends TransactionBuilder {
    * @param initArgs Arguments for `init()` method.
    * @param options Transaction options.
    */
-  constructor(code: Buffer, metadata: ContractMetadata, initArgs: string[], options?: TransactionOptions) {
+  constructor(code: Buffer, metadata: ContractMetadata, initArgs: string[], options: TransactionOptions) {
     super(options)
     this._code = code
     this._metadata = metadata
@@ -103,6 +103,41 @@ class ContractDeploymentBuilder extends TransactionBuilder {
 
   public getReceiverAddress(): string {
     return ADDRESS_ZERO_BECH32
+  }
+}
+
+
+
+/**
+ * Builder for contract deployment transactions.
+ */
+class ContractUpgradeBuilder extends TransactionBuilder {
+  protected _code: Buffer
+  protected _metadata: ContractMetadata
+  protected _address: string
+
+  /**
+   * Constructor.
+   * 
+   * @param code Contract bytecode.
+   * @param metadata Contract metadata.
+   * @param initArgs Arguments for `init()` method.
+   * @param options Transaction options.
+   */
+  constructor(address: string, code: Buffer, metadata: ContractMetadata, options: TransactionOptions) {
+    super(options)
+    this._address = address
+    this._code = code
+    this._metadata = metadata
+  }
+
+  public getTransactionDataString(): string {
+    const metadata = contractMetadataToString(this._metadata)
+    return joinDataArguments('upgradeContract', this._code.toString('hex'), metadata)
+  }
+
+  public getReceiverAddress(): string {
+    return this._address
   }
 }
 
@@ -124,7 +159,7 @@ class ContractInvocationBuilder extends TransactionBuilder {
    * @param args Arguments to pass to function.
    * @param options Transaction options.
    */
-  constructor(address: string, func: string, args: string[], options?: TransactionOptions) {
+  constructor(address: string, func: string, args: string[], options: TransactionOptions) {
     super(options)
     this._address = address
     this._func = func
@@ -288,9 +323,44 @@ export class Contract extends TransactionOptionsBase {
    * @param initArgs Arguments for `init()` method.
    * @param options Transaction options.
    */
-  public static createDeployment(code: Buffer, metadata: ContractMetadata, initArgs: string[], options?: TransactionOptions): TransactionBuilder {
-    verifyTransactionOptions(options!, 'provider')
+  public static createDeployment(code: Buffer, metadata: ContractMetadata, initArgs: string[], options: TransactionOptions): TransactionBuilder {
+    verifyTransactionOptions(options, 'provider')
     return new ContractDeploymentBuilder(code, metadata, initArgs, options)
+  }
+
+
+  /**
+   * Create a contract upgrade transaction.
+   * 
+   * The `options` parameter should typically at least contain `sender`, `provider` and `signer` so that 
+   * subsequent interactions can make use of these.
+   * 
+   * @param address Contract address.
+   * @param code Contract bytecode code.
+   * @param metadata Contract metadata.
+   * @param options Transaction options.
+   */
+  public static createUpgrade(address: string, code: Buffer, metadata: ContractMetadata, options: TransactionOptions): TransactionBuilder {
+    verifyTransactionOptions(options, 'provider')
+    return new ContractUpgradeBuilder(address, code, metadata, options)
+  }
+
+
+
+  /**
+   * Construct a contract function invocation transaction.
+   *
+   * The `options` parameter should typically at least contain `sender`, `provider` and `signer` so that
+   * subsequent interactions can make use of these.
+   *
+   * @param address Contract address.
+   * @param func Function to call.
+   * @param args Arguments to pass to function.
+   * @param options Options which will get merged with the base options set in the constructor.
+   */
+  public static createInvocation(address: string, func: string, args: string[], options: TransactionOptions): TransactionBuilder {
+    verifyTransactionOptions(options, 'provider')
+    return new ContractInvocationBuilder(address, func, args, options)
   }
 
 
@@ -324,7 +394,7 @@ export class Contract extends TransactionOptionsBase {
   async invoke(func: string, args?: string[], options?: TransactionOptions): Promise<TransactionReceipt> {
     const mergedOptions = this._mergeTransactionOptions(options, 'signer', 'provider')
 
-    const obj = this.createInvocation(func, args || [], mergedOptions)
+    const obj = Contract.createInvocation(this._address, func, args || [], mergedOptions)
     const tx = await obj.toTransaction()
 
     const signedTx = await mergedOptions.signer!.signTransaction(tx, mergedOptions.provider!)
@@ -332,14 +402,22 @@ export class Contract extends TransactionOptionsBase {
     return await mergedOptions.provider!.sendSignedTransaction(signedTx)
   }
 
+
   /**
-   * Construct a function invocation transaction.
-   *
-   * @param func Function to call.
-   * @param args Arguments to pass to function.
+   * Upgrade the contract code and metadata.
+   * 
+   * @param code New code.
+   * @param metadata New metadata.
    * @param options Options which will get merged with the base options set in the constructor.
    */
-  createInvocation(func: string, args: string[], options?: TransactionOptions): TransactionBuilder {
-    return new ContractInvocationBuilder(this._address, func, args, this._mergeTransactionOptions(options, 'provider'))
+  async upgrade(code: Buffer, metadata: ContractMetadata, options?: TransactionOptions): Promise<TransactionReceipt> {
+    const mergedOptions = this._mergeTransactionOptions(options, 'signer', 'provider')
+
+    const obj = Contract.createUpgrade(this._address, code, metadata, mergedOptions)
+    const tx = await obj.toTransaction()
+
+    const signedTx = await mergedOptions.signer!.signTransaction(tx, mergedOptions.provider!)
+
+    return await mergedOptions.provider!.sendSignedTransaction(signedTx)
   }
 }

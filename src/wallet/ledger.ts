@@ -3,9 +3,9 @@ import ElrondLedgerApp from '@elrondnetwork/hw-app-elrond'
 
 import { WalletBase } from "./base"
 
-export const withLedger = async (transport: any, cb: Function) => {
+export const withLedgerAppInstance = async (transport: any, cb: Function) => {
   try {
-    const ledgerTransport: Transport = await new Promise(async (resolve, reject) => {
+    const ledgerTransportInstance: Transport = await new Promise(async (resolve, reject) => {
       const timer = setTimeout(() => {
         reject(new Error('Cannot write to Ledger transport'))
       }, 2000)
@@ -25,11 +25,23 @@ export const withLedger = async (transport: any, cb: Function) => {
     })
 
     // get the result and then close the transport
-    let ret = await cb(new ElrondLedgerApp(ledgerTransport))
+    let ret
+    let error
+    try {
+      ret = await cb(new ElrondLedgerApp(ledgerTransportInstance), ledgerTransportInstance)
+    } catch (err) {
+      error = err
+    }
+
+    await ledgerTransportInstance.close()
     
-    await ledgerTransport.close()
-    
-    return ret
+    if (ret) { 
+      return ret 
+    }
+
+    if (error) {
+      throw error
+    }
   } catch (err) {
     console.error(err)
     const msg = err.message.toLowerCase()
@@ -62,6 +74,7 @@ export const withLedger = async (transport: any, cb: Function) => {
 export class LedgerWallet extends WalletBase {
   protected _address: string
   protected _transport: any
+  protected _activeTransportInstances: Record<string,Transport>
 
   /**
    * Constructor.
@@ -70,6 +83,17 @@ export class LedgerWallet extends WalletBase {
     super()
     this._transport = transport
     this._address = address
+    this._activeTransportInstances = {}
+  }
+
+  /**
+   * Get whether there are pending actions on the Ledger.
+   * 
+   * If there are pending actions then Ledger transport instances cannot be closed until the user either 
+   * accepts or rejects those actions on the Ledger. 
+   */
+  public hasPendingActions(): Boolean {
+    return Object.values(this._activeTransportInstances).length > 0
   }
 
   /**
@@ -83,7 +107,7 @@ export class LedgerWallet extends WalletBase {
       const isSupported = await t.isSupported()
 
       if (isSupported) {
-        return await withLedger(t, async (elrondLedgerApp: any) => {
+        return await withLedgerAppInstance(t, async (elrondLedgerApp: any) => {
           const { address } = await elrondLedgerApp.getAddress()
           return new LedgerWallet(t, address)
         })
@@ -93,8 +117,25 @@ export class LedgerWallet extends WalletBase {
     throw new Error('Ledger transports not supported')
   }
 
+  protected async _withLedger(cb: Function): Promise<any> {
+    return await withLedgerAppInstance(this._transport, async (erdLedgerInstance: any, ledgerTransportInstance: Transport) => {
+      // keep track of this open transport instance, and clean it up later below once we're done with it
+      const instanceId = Math.random().toString()
+      this._activeTransportInstances[instanceId] = ledgerTransportInstance
+
+      try {
+        let ret = await cb(erdLedgerInstance)
+        delete this._activeTransportInstances[instanceId]
+        return ret
+      } catch (err) {
+        delete this._activeTransportInstances[instanceId]
+        throw err
+      }
+    })
+  }
+
   protected async _sign(rawTx: Buffer): Promise<string> {
-    return await withLedger(this._transport, async (erdLedgerInstance: any) => {
+    return await this._withLedger(async (erdLedgerInstance: any) => {
       const { contractData } = await erdLedgerInstance.getAppConfiguration()
 
       if ('1' != contractData) {

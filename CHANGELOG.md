@@ -1,3 +1,10 @@
+## [1.11.1](https://github.com/erdDEVcode/elrondjs/compare/v1.11.0...v1.11.1) (2020-12-22)
+
+
+### Bug Fixes
+
+* ensure ledger transport always gets closed ([952f85d](https://github.com/erdDEVcode/elrondjs/commit/952f85ddf1611e6268101c3709c466b27fc2dfb9))
+
 # [1.11.0](https://github.com/erdDEVcode/elrondjs/compare/v1.10.0...v1.11.0) (2020-12-17)
 
 

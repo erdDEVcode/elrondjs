@@ -1,3 +1,10 @@
+# [1.12.0](https://github.com/erdDEVcode/elrondjs/compare/v1.11.1...v1.12.0) (2020-12-29)
+
+
+### Features
+
+* contract upgrades + testing ([ba77f61](https://github.com/erdDEVcode/elrondjs/commit/ba77f61bfa441d3311892b853776647e7b40142e))
+
 ## [1.11.1](https://github.com/erdDEVcode/elrondjs/compare/v1.11.0...v1.11.1) (2020-12-22)
 
 

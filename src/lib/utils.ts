@@ -26,10 +26,17 @@ export const stringToHex = (arg: string): string => {
 
 /**
  * Convert number to its HEX representation.
+ * 
+ * This will prefix the returned string with `0`'s in order to ensure an even length.
+ * 
  * @param arg number.
  */
 export const numberToHex = (arg: number): string => {
-  return ('0' + arg.toString(16)).slice(-2)
+  let str = arg.toString(16)
+  if (str.length % 2 !== 0) {
+    str = `0${str}`
+  }
+  return str
 }
 
 

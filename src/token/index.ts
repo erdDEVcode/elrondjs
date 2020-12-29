@@ -113,16 +113,20 @@ export class Token extends TransactionOptionsBase {
   public static async new(name: string, ticker: string, initialSupply: number, options: TransactionOptions): Promise<void> {
     const c = new Contract(METACHAIN_TOKEN_CONTRACT, options)
     
+    // "@416c696365546f6b656e73" +
+    //   "@414c43" +
+    //   "@0ffb"
+
     const tx = await c.invoke('issue', [
-      stringToHex(name),
-      stringToHex(ticker),
-      numberToHex(initialSupply)
+      '416c696365546f6b656e73',//stringToHex(name),
+      '414c43',//stringToHex(ticker),
+      '0ffb',//numberToHex(initialSupply)
     ], {
       gasLimit: TOKEN_MGMT_STANDARD_GAS_COST,
       value: '5000000000000000000' /* 5 eGLD */
     })
 
-    await options.provider!.waitForTransaction(tx.hash)
+    console.log(await options.provider!.waitForTransaction(tx.hash))
 
     // TODO: should return Token instance...
     //

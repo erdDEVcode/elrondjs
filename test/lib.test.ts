@@ -15,7 +15,8 @@ describe('Lib utils', () => {
   })
 
   it('number -> hex', async () => {
-    expect(numberToHex(666)).to.eql('9a')
+    expect(numberToHex(666)).to.eql('029a')
+    expect(numberToHex(10000)).to.eql('2710')
   })
 
   it('keccak', async () => {

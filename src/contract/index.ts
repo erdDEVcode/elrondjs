@@ -109,12 +109,13 @@ class ContractDeploymentBuilder extends TransactionBuilder {
 
 
 /**
- * Builder for contract deployment transactions.
+ * Builder for contract upgrade transactions.
  */
 class ContractUpgradeBuilder extends TransactionBuilder {
   protected _code: Buffer
   protected _metadata: ContractMetadata
   protected _address: string
+  protected _initArgs: string[]
 
   /**
    * Constructor.
@@ -124,16 +125,17 @@ class ContractUpgradeBuilder extends TransactionBuilder {
    * @param initArgs Arguments for `init()` method.
    * @param options Transaction options.
    */
-  constructor(address: string, code: Buffer, metadata: ContractMetadata, options: TransactionOptions) {
+  constructor(address: string, code: Buffer, metadata: ContractMetadata, initArgs: string[], options: TransactionOptions) {
     super(options)
     this._address = address
     this._code = code
     this._metadata = metadata
+    this._initArgs = initArgs
   }
 
   public getTransactionDataString(): string {
     const metadata = contractMetadataToString(this._metadata)
-    return joinDataArguments('upgradeContract', this._code.toString('hex'), metadata)
+    return joinDataArguments('upgradeContract', this._code.toString('hex'), metadata, ...this._initArgs)
   }
 
   public getReceiverAddress(): string {
@@ -338,11 +340,12 @@ export class Contract extends TransactionOptionsBase {
    * @param address Contract address.
    * @param code Contract bytecode code.
    * @param metadata Contract metadata.
+   * @param initArgs Arguments for `init()` method.
    * @param options Transaction options.
    */
-  public static createUpgrade(address: string, code: Buffer, metadata: ContractMetadata, options: TransactionOptions): TransactionBuilder {
+  public static createUpgrade(address: string, code: Buffer, metadata: ContractMetadata, initArgs: string[], options: TransactionOptions): TransactionBuilder {
     verifyTransactionOptions(options, 'provider')
-    return new ContractUpgradeBuilder(address, code, metadata, options)
+    return new ContractUpgradeBuilder(address, code, metadata, initArgs, options)
   }
 
 
@@ -408,12 +411,13 @@ export class Contract extends TransactionOptionsBase {
    * 
    * @param code New code.
    * @param metadata New metadata.
+   * @param initArgs Arguments for `init()` method.
    * @param options Options which will get merged with the base options set in the constructor.
    */
-  async upgrade(code: Buffer, metadata: ContractMetadata, options?: TransactionOptions): Promise<TransactionReceipt> {
+  async upgrade(code: Buffer, metadata: ContractMetadata, initArgs: string[], options?: TransactionOptions): Promise<TransactionReceipt> {
     const mergedOptions = this._mergeTransactionOptions(options, 'signer', 'provider')
 
-    const obj = Contract.createUpgrade(this._address, code, metadata, mergedOptions)
+    const obj = Contract.createUpgrade(this._address, code, metadata, initArgs, mergedOptions)
     const tx = await obj.toTransaction()
 
     const signedTx = await mergedOptions.signer!.signTransaction(tx, mergedOptions.provider!)

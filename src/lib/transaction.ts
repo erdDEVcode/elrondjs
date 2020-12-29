@@ -1,5 +1,9 @@
 import { Provider, Transaction, TransactionOnChain, TransactionOptions, TransactionStatus } from "../common"
+import { TransactionFailedError } from "../errors"
 import { ARGS_DELIMITER } from "./utils"
+
+
+
 
 
 /**
@@ -24,7 +28,7 @@ export class TransactionTracker {
   /**
    * Wait until this transaction has finished executing.
    * 
-   * @throws {Error} If transaction fails or transaction tracking fails for whatever reason.
+   * @throws {TransactionFailedError} If transaction fails or transaction tracking fails for whatever reason.
    */
   async waitForCompletion(): Promise<TransactionOnChain> {
     return new Promise((resolve, reject) => {
@@ -34,9 +38,11 @@ export class TransactionTracker {
             .then(txOnChain => {
               switch (txOnChain.status) {
                 case TransactionStatus.FAILURE:
-                  reject(
-                    new Error(`Transaction failed: ${this._txHash}`)
-                  )
+                  let errMsg = `Transaction failed: ${this._txHash}`
+                  if (txOnChain.smartContractErrors.length) {
+                    errMsg = `Smart contract error:\n\n${txOnChain.smartContractErrors.join("\n")}`
+                  } 
+                  reject(new TransactionFailedError(errMsg, txOnChain))
                   break
                 case TransactionStatus.SUCCESS:
                   resolve(txOnChain)
@@ -47,7 +53,7 @@ export class TransactionTracker {
             })
             .catch(err => {
               reject(
-                new Error(`Error checking transaction ${this._txHash}: ${err.message}`)
+                new TransactionFailedError(`Error checking transaction ${this._txHash}: ${err.message}`)
               )
             })
         }, 5000 /* check every 5 seconds */)

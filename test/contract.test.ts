@@ -73,11 +73,15 @@ describe('contracts', () => {
     expect(sum).to.equal(8)
   })
 
-  describe.skip('and upgrades', () => {
+  describe('and upgrades', () => {
     it('are off by default', async () => {
-      await receipt.contract.upgrade(adderWasm, {}, {
+      const tx = await receipt.contract.upgrade(adderWasm, {}, [ 
+        numberToHex(3) 
+      ], {
         gasLimit: 15000000
-      }).should.be.rejectedWith('test')
+      })
+
+      await provider.waitForTransaction(tx.hash).should.be.rejected
     })
 
     it('are on if deployed as upgradeable', async () => {
@@ -97,11 +101,15 @@ describe('contracts', () => {
 
       await provider.waitForTransaction(receipt.hash)
 
-      await receipt.contract.upgrade(adderWasm, {
+      const rec2 = await receipt.contract.upgrade(adderWasm, {
         upgradeable: true,
-      }, {
+      }, [
+        numberToHex(3)
+      ], {
         gasLimit: 15000000
-      }).should.be.rejectedWith('test')
+      })
+
+      await provider.waitForTransaction(rec2.hash)
     })
   })
 })

@@ -256,6 +256,10 @@ export interface TransactionOnChain extends Transaction {
    */
   raw: object,
   /**
+   * Smart contract error messages.
+   */
+  smartContractErrors: string[],
+  /**
    * Epoch in which transaction was executed.
    */
   epoch: number,
@@ -330,9 +334,10 @@ export interface Provider {
   /**
    * Wait for a broadcast transaction to finish executing.
    * 
-   * This will throw an `Error` if the transaction fails for any reason.
+   * This will throw an `TransactionFailedError` if the transaction fails for any reason.
    *
    * @param txHash Hash of transaction to wait for.
+   * @throws {TransactionFailedError} If transaction fails.
    */
   waitForTransaction: (txHash: string) => Promise<TransactionOnChain>,
   /**

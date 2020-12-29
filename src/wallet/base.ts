@@ -11,11 +11,12 @@ export abstract class WalletBase implements Wallet {
 
   public async signTransaction(tx: Transaction, provider: Provider): Promise<SignedTransaction> {
     const address = this.address()
-    const { nonce } = await provider.getAddress(address)
+
+    const { nonce: nonceOnChain } = await provider.getAddress(address)
     const { chainId } = await provider.getNetworkConfig()
 
     const t = new Elrond.transaction(
-      nonce,
+      tx.nonce || nonceOnChain,
       address,
       tx.receiver,
       tx.value,
@@ -35,9 +36,10 @@ export abstract class WalletBase implements Wallet {
 
   /**
    * Sign a raw transaction buffer.
+   * 
    * @param rawTx The raw transaction.
    */
-  protected abstract async _sign(rawTx: Buffer): Promise<string>
+  protected abstract _sign(rawTx: Buffer): Promise<string>
 
   /**
    * Get the bech32 address of this wallet.

@@ -32,11 +32,25 @@ export const parseRawTransaction = (tx: any): TransactionOnChain => {
       status = TransactionStatus.PENDING
   }
 
+  const smartContractResults = tx.smartContractResults || []
+
+  // check smart contract results
+  let smartContractErrors: string[] = []
+  smartContractResults.forEach((res: any) => {
+    if (res.returnMessage) {
+      smartContractErrors.push(res.returnMessage)
+    }
+  })
+  if (smartContractErrors.length) {
+    status = TransactionStatus.FAILURE
+  }
+
   return {
     raw: tx,
     ...tx,
     status,
-    timestamp: new Date(tx.timestamp * 1000)
+    timestamp: new Date(tx.timestamp * 1000),
+    smartContractErrors,
   }
 }
 
@@ -128,12 +142,12 @@ export class ProxyProvider extends Api implements Provider {
     return { signedTransaction: signedTx, hash }
   }
 
-  public async waitForTransaction(txHash: string): Promise<void> {
+  public async waitForTransaction(txHash: string): Promise<TransactionOnChain> {
     return new TransactionTracker(this, txHash).waitForCompletion()
   }
 
   public async getTransaction(txHash: string): Promise<TransactionOnChain> {
-    const ret = await this._call(`/transaction/${txHash}`, {
+    const ret = await this._call(`/transaction/${txHash}?withResults=true`, {
       method: 'GET',
     })
 

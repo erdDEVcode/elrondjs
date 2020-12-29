@@ -1,8 +1,8 @@
 import { Buffer } from 'buffer'
 import Elrond from '@elrondnetwork/elrond-core-js'
+
 import { WalletBase } from './base'
 import { Account, validateAccount } from './utils'
-import { Transaction, Provider, SignedTransaction } from '../common'
 
 /**
  * @internal
@@ -85,9 +85,10 @@ export class BasicWallet extends WalletBase {
       const matches = PEM_REGEX.exec(pem.trim())
       const match = (matches ? matches[1] : '').trim()
       if (match) {
-        const bytes = Buffer.from(match, 'base64')
+        const bytes = Buffer.from(Buffer.from(match, 'base64').toString(), 'hex')
+        const uint8array = new Uint8Array(bytes)
         let account = new Elrond.account()
-        account.loadFromPrivateKey(bytes)
+        account.loadFromPrivateKey(uint8array)
         return new BasicWallet(account)
       } else {
         throw new Error('No PEM found')

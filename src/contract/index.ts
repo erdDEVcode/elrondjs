@@ -4,18 +4,14 @@ import {
   ContractQueryResult, 
   ContractQueryResultParseOptions, 
   ContractQueryResultDataType, 
-  ContractOptions,
-  Transaction,
+  TransactionOptions,
   TransactionReceipt,
+  Provider,
+  ContractMetadata,
 } from '../common'
 
+import { TransactionOptionsBase, joinDataArguments, TransactionBuilder, verifyTransactionOptions, ADDRESS_ZERO_BECH32, ARWEN_VIRTUAL_MACHINE, addressToHexString, keccak, hexStringToAddress, contractMetadataToString } from '../lib'
 
-/**
- * @internal
- */
-const joinArguments = (...args: string[]) => {
-  return args.join('@')
-}
 
 /**
  * @internal
@@ -23,7 +19,25 @@ const joinArguments = (...args: string[]) => {
 const queryResultValueToHex = (val: string) => `0x${Buffer.from(val, 'base64').toString('hex')}`  
 
 /**
- * Parse a contracty query result.
+ * @internal
+ */
+const queryResultValueToString = (val: string) => `0x${Buffer.from(val, 'base64').toString('utf8')}`  
+
+
+/**
+ * Receipt obtained when deploying a contract.
+ */
+export interface ContractDeploymentTransactionReceipt extends TransactionReceipt {
+  /**
+   * Contract instance for interacting with the deployed contract.
+   * 
+   * This is only useful if the deployment transaction succeeds.
+   */
+  contract: Contract,
+}
+
+/**
+ * Parse a contract query result.
  * 
  * @param result The query result.
  * @param options Parsing options.
@@ -47,6 +61,11 @@ export const parseQueryResult = (result: ContractQueryResult, options: ContractQ
         return queryResultValueToHex(val)
       }
     case ContractQueryResultDataType.STRING:
+        if (!val) {
+          return ''
+        } else {
+          return queryResultValueToString(val)
+        }
     default:
       return val
   }
@@ -55,42 +74,84 @@ export const parseQueryResult = (result: ContractQueryResult, options: ContractQ
 
 
 /**
- * Represents a contract-related transaction.
- * 
- * This is the base class of transactions related to deploying, upgrading and calling contracts.
+ * Builder for contract deployment transactions.
  */
-abstract class ContractTransaction {
-  protected _options?: ContractOptions
+class ContractDeploymentBuilder extends TransactionBuilder {
+  protected _code: Buffer
+  protected _metadata: ContractMetadata
+  protected _initArgs: string[]
 
   /**
    * Constructor.
    * 
-   * @param options Options for when interacting with a contract. 
+   * @param code Contract bytecode.
+   * @param metadata Contract metadata.
+   * @param initArgs Arguments for `init()` method.
+   * @param options Transaction options.
    */
-  constructor(options?: ContractOptions) {
-    this._options = options
+  constructor(code: Buffer, metadata: ContractMetadata, initArgs: string[], options: TransactionOptions) {
+    super(options)
+    this._code = code
+    this._metadata = metadata
+    this._initArgs = initArgs
   }
 
-  /**
-   * Get the `data` string representation of this contract-related transaction.
-   */
-  public abstract getTransactionDataString(): string
+  public getTransactionDataString(): string {
+    const metadata = contractMetadataToString(this._metadata)
+    return joinDataArguments(this._code.toString('hex'), ARWEN_VIRTUAL_MACHINE, metadata, ...this._initArgs)
+  }
 
-  /**
-   * Get signable transaction representation of this contract-related transaction.
-   */
-  public abstract async toTransaction(): Promise<Transaction>
+  public getReceiverAddress(): string {
+    return ADDRESS_ZERO_BECH32
+  }
 }
 
 
+
 /**
- * Represents a transaction to call a contract function.
+ * Builder for contract upgrade transactions.
  */
-class ContractInvocation extends ContractTransaction {
+class ContractUpgradeBuilder extends TransactionBuilder {
+  protected _code: Buffer
+  protected _metadata: ContractMetadata
+  protected _address: string
+  protected _initArgs: string[]
+
+  /**
+   * Constructor.
+   * 
+   * @param code Contract bytecode.
+   * @param metadata Contract metadata.
+   * @param initArgs Arguments for `init()` method.
+   * @param options Transaction options.
+   */
+  constructor(address: string, code: Buffer, metadata: ContractMetadata, initArgs: string[], options: TransactionOptions) {
+    super(options)
+    this._address = address
+    this._code = code
+    this._metadata = metadata
+    this._initArgs = initArgs
+  }
+
+  public getTransactionDataString(): string {
+    const metadata = contractMetadataToString(this._metadata)
+    return joinDataArguments('upgradeContract', this._code.toString('hex'), metadata, ...this._initArgs)
+  }
+
+  public getReceiverAddress(): string {
+    return this._address
+  }
+}
+
+
+
+/**
+ * Builder for contract invocation transactions.
+ */
+class ContractInvocationBuilder extends TransactionBuilder {
   protected _address: string
   protected _func: string
   protected _args: string[]
-
 
   /**
    * Constructor.
@@ -100,7 +161,7 @@ class ContractInvocation extends ContractTransaction {
    * @param args Arguments to pass to function.
    * @param options Transaction options.
    */
-  constructor(address: string, func: string, args: string[], options?: ContractOptions) {
+  constructor(address: string, func: string, args: string[], options: TransactionOptions) {
     super(options)
     this._address = address
     this._func = func
@@ -108,45 +169,37 @@ class ContractInvocation extends ContractTransaction {
   }
 
   public getTransactionDataString(): string {
-    return joinArguments(this._func, ...this._args)
+    return joinDataArguments(this._func, ...this._args)
   }
 
-  public async toTransaction(): Promise<Transaction> {
-    if (!this._options) {
-      throw new Error('Execution options must be set')
-    }
-
-    if (!this._options?.sender) {
-      throw new Error('Sender must be set')
-    }
-
-    if (!this._options?.provider) {
-      throw new Error('Provider must be set')
-    }
-
-    const data = this.getTransactionDataString()
-    const networkConfig = await this._options?.provider.getNetworkConfig()
-    const gasPrice = networkConfig.minGasPrice
-    const gasLimit = networkConfig.minGasLimit + networkConfig.gasPerDataByte * data.length
-
-    return {
-      sender: this._options!.sender,
-      receiver: this._address,
-      value: this._options!.value || '0',
-      gasPrice: this._options!.gasPrice || gasPrice,
-      gasLimit: this._options!.gasLimit || gasLimit,
-      data,
-      meta: this._options!.meta,
-    }
+  public getReceiverAddress(): string {
+    return this._address
   }
 }
 
 /**
  * Interfaces for working with contracts.
  */
-export class Contract {
+export class Contract extends TransactionOptionsBase {
   protected _address: string = ''
-  protected _options?: ContractOptions
+
+  /**
+   * Constructor.
+   * 
+   * @param address Contract address.
+   * @param options Transaction options.
+   */
+  public constructor(address: string, options?: TransactionOptions) {
+    super(options)
+    this._address = address
+  }
+
+  /**
+   * Get contract address.
+   */
+  public get address (): string {
+    return this._address
+  }
 
   /**
    * Get instance for contract at given address.
@@ -154,14 +207,13 @@ export class Contract {
    * The `options` parameter should typically at least contain `sender`, `provider` and `signer` so that 
    * subsequent interactions can make use of these.
    * 
+   * If `options.provider` is set then this checks to ensure that contract code is present at the 
+   * given address.
+   * 
    * @param address Contract address.
-   * @param options Base options for all subsequent operations.
+   * @param options Base options for all subsequent transactions and contract querying.
    */
-  public static async at(address: string, options?: ContractOptions): Promise<Contract> {
-    const c = new Contract()
-    c._address = address
-    c._options = options
-
+  public static async at(address: string, options?: TransactionOptions): Promise<Contract> {
     // if provider is given then confirm that address contains code!
     if (options?.provider) {
       try {
@@ -175,8 +227,146 @@ export class Contract {
       }
     }
 
-    return c
+    return new Contract(address, options)
   }
+
+
+
+  /**
+   * Deploy a contract.
+   * 
+   * The `options` parameter should typically at least contain `sender`, `provider` and `signer` so that 
+   * subsequent interactions can make use of these.
+   * 
+   * @param code Contract bytecode code.
+   * @param metadata Contract metadata.
+   * @param initArgs Arguments for `init()` method.
+   * @param options Base options for all subsequent transactions and contract querying.
+   */
+  public static async deploy(code: Buffer, metadata: ContractMetadata, initArgs: string[], options: TransactionOptions): Promise<ContractDeploymentTransactionReceipt> {
+    verifyTransactionOptions(options!, 'provider', 'signer', 'sender')
+
+    const { provider, sender, signer } = options!
+
+    // compute deployed address
+    const computedAddress = await Contract.computeDeployedAddress(sender!, options!.provider!)
+
+    // create deployment transaction
+    const obj = Contract.createDeployment(code, metadata, initArgs, options)
+    const tx = await obj.toTransaction()
+
+    // sign and send
+    const signedTx = await signer!.signTransaction(tx, provider!)
+    const txReceipt = await provider!.sendSignedTransaction(signedTx)
+
+    return {
+      ...txReceipt,
+      contract: new Contract(computedAddress, {
+        ...options,
+        gasLimit: undefined, // reset gas limit
+      })
+    }
+  }
+  
+
+  /**
+   * Compute the would-be address of a deployed contract.
+   * 
+   * The address is computed deterministically, from the address of the deployer and their next transaction nonce.
+   * 
+   * @param deployer Address of contract deployer/owner in bech32 format.
+   * @param provider Provider instance.
+   */
+  static async computeDeployedAddress(deployer: string, provider: Provider): Promise<string> {
+    const { nonce } = await provider.getAddress(deployer)
+    return Contract.computeDeployedAddressWithNonce(deployer, nonce)
+  }
+  
+  
+
+  /**
+   * Compute the would-be address of a deployed contract.
+   * 
+   * The address is computed deterministically, from the address of the deployer and the given transaction nonce.
+   * 
+   * Based on: https://github.com/ElrondNetwork/elrond-sdk/blob/master/erdjs/src/smartcontracts/smartContract.ts#L216
+   * 
+   * @param deployer Address of contract deployer/owner in bech32 format.
+   * @param nonce Their nonce at the time of deployment.
+   */
+  static async computeDeployedAddressWithNonce (deployer: string, nonce: number): Promise<string> {
+    const initialPadding = Buffer.alloc(8, 0)
+    const ownerPubkey = Buffer.from(addressToHexString(deployer), 'hex')
+    const shardSelector = ownerPubkey.slice(30)
+    const ownerNonceBytes = Buffer.alloc(8)
+    ownerNonceBytes.writeBigUInt64LE(BigInt(nonce.valueOf()))
+    const bytesToHash = Buffer.concat([ownerPubkey, ownerNonceBytes])
+    const hash = keccak(bytesToHash)
+    const vmTypeBytes = Buffer.from(ARWEN_VIRTUAL_MACHINE, 'hex')
+    const addressBytes = Buffer.concat([
+      initialPadding,
+      vmTypeBytes,
+      hash.slice(10, 30),
+      shardSelector
+    ])
+    return hexStringToAddress(addressBytes.toString('hex'))
+  }
+  
+  
+  
+  /**
+   * Create a contract deployment transaction.
+   * 
+   * The `options` parameter should typically at least contain `sender`, `provider` and `signer` so that 
+   * subsequent interactions can make use of these.
+   * 
+   * @param code Contract bytecode code.
+   * @param metadata Contract metadata.
+   * @param initArgs Arguments for `init()` method.
+   * @param options Transaction options.
+   */
+  public static createDeployment(code: Buffer, metadata: ContractMetadata, initArgs: string[], options: TransactionOptions): TransactionBuilder {
+    verifyTransactionOptions(options, 'provider')
+    return new ContractDeploymentBuilder(code, metadata, initArgs, options)
+  }
+
+
+  /**
+   * Create a contract upgrade transaction.
+   * 
+   * The `options` parameter should typically at least contain `sender`, `provider` and `signer` so that 
+   * subsequent interactions can make use of these.
+   * 
+   * @param address Contract address.
+   * @param code Contract bytecode code.
+   * @param metadata Contract metadata.
+   * @param initArgs Arguments for `init()` method.
+   * @param options Transaction options.
+   */
+  public static createUpgrade(address: string, code: Buffer, metadata: ContractMetadata, initArgs: string[], options: TransactionOptions): TransactionBuilder {
+    verifyTransactionOptions(options, 'provider')
+    return new ContractUpgradeBuilder(address, code, metadata, initArgs, options)
+  }
+
+
+
+  /**
+   * Construct a contract function invocation transaction.
+   *
+   * The `options` parameter should typically at least contain `sender`, `provider` and `signer` so that
+   * subsequent interactions can make use of these.
+   *
+   * @param address Contract address.
+   * @param func Function to call.
+   * @param args Arguments to pass to function.
+   * @param options Options which will get merged with the base options set in the constructor.
+   */
+  public static createInvocation(address: string, func: string, args: string[], options: TransactionOptions): TransactionBuilder {
+    verifyTransactionOptions(options, 'provider')
+    return new ContractInvocationBuilder(address, func, args, options)
+  }
+
+
 
   /**
    * Query a function in read-only mode, without using a transaction.
@@ -187,7 +377,7 @@ export class Contract {
    * @param args Arguments to pass to function.
    * @param options Options which will get merged with the base options set in the constructor.
    */
-  async query(func: string, args?: string[], options?: ContractOptions): Promise<ContractQueryResult> {
+  async query(func: string, args?: string[], options?: TransactionOptions): Promise<ContractQueryResult> {
     const mergedOptions = this._mergeTransactionOptions(options, 'provider')
 
     return await mergedOptions.provider!.queryContract({
@@ -204,10 +394,10 @@ export class Contract {
    * @param args Arguments to pass to function.
    * @param options Options which will get merged with the base options set in the constructor.
    */
-  async invoke(func: string, args?: string[], options?: ContractOptions): Promise<TransactionReceipt> {
+  async invoke(func: string, args?: string[], options?: TransactionOptions): Promise<TransactionReceipt> {
     const mergedOptions = this._mergeTransactionOptions(options, 'signer', 'provider')
 
-    const obj = this.createInvocation(func, args || [], mergedOptions)
+    const obj = Contract.createInvocation(this._address, func, args || [], mergedOptions)
     const tx = await obj.toTransaction()
 
     const signedTx = await mergedOptions.signer!.signTransaction(tx, mergedOptions.provider!)
@@ -215,38 +405,23 @@ export class Contract {
     return await mergedOptions.provider!.sendSignedTransaction(signedTx)
   }
 
+
   /**
-   * Construct a function invocation transaction.
-   *
-   * @param func Function to call.
-   * @param args Arguments to pass to function.
+   * Upgrade the contract code and metadata.
+   * 
+   * @param code New code.
+   * @param metadata New metadata.
+   * @param initArgs Arguments for `init()` method.
    * @param options Options which will get merged with the base options set in the constructor.
    */
-  createInvocation(func: string, args: string[], options?: ContractOptions): ContractTransaction {
-    return new ContractInvocation(this._address, func, args, this._mergeTransactionOptions(options, 'provider'))
-  }
+  async upgrade(code: Buffer, metadata: ContractMetadata, initArgs: string[], options?: TransactionOptions): Promise<TransactionReceipt> {
+    const mergedOptions = this._mergeTransactionOptions(options, 'signer', 'provider')
 
-  /**
-   * Merge given options with options set in the constructor.
-   * 
-   * The options in the constructor will be extended with the given options and a new object will 
-   * be returned, leaving the originals unmodified.
-   * 
-   * @param options Options to merge.
-   * @param fieldsToCheck Fields to check the presence of. If any of these fields are missing an error will be thrown.
-   * @throws {Errors} If any field listed in `fieldsToCheck` is absent in the final merged options object.
-   */
-  protected _mergeTransactionOptions(options?: ContractOptions, ...fieldsToCheck: string[]): ContractOptions {
-    const mergedOptions = Object.assign({}, this._options, options)
+    const obj = Contract.createUpgrade(this._address, code, metadata, initArgs, mergedOptions)
+    const tx = await obj.toTransaction()
 
-    if (fieldsToCheck.length) {
-      fieldsToCheck.forEach(field => {
-        if (!(mergedOptions as any)[field]) {
-          throw new Error(`${field} must be set`)
-        }
-      })
-    }
+    const signedTx = await mergedOptions.signer!.signTransaction(tx, mergedOptions.provider!)
 
-    return mergedOptions
+    return await mergedOptions.provider!.sendSignedTransaction(signedTx)
   }
 }

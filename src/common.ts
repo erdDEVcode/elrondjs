@@ -56,6 +56,26 @@ export interface Address {
   code: string,
 }
 
+
+/**
+ * Contract metadata, used for when deploying/upgrading a contract.
+ */
+export interface ContractMetadata {
+  /**
+   * Whether the contract is upgradeable.
+   */
+  upgradeable?: boolean,
+  /**
+   * Whether other contracts can read this contract's data (without calling one of its pure functions).
+   */
+  readable?: boolean,
+  /**
+   * Whether the contract can receive eGLD and ESDT tokens via a transfer(without calling one of its methods).
+   */
+  payable?: boolean,
+}
+
+
 /**
  * Represents the parameters for querying a contract.
  */
@@ -146,6 +166,10 @@ export interface Transaction {
    * Denominated in the smallest unit (10^18).
    */
   value: string,
+  /** 
+   * The sender nonce to use.
+   */
+  nonce?: number,
   /**
    * The gas price.
    * 
@@ -232,6 +256,10 @@ export interface TransactionOnChain extends Transaction {
    */
   raw: object,
   /**
+   * Smart contract error messages.
+   */
+  smartContractErrors: string[],
+  /**
    * Epoch in which transaction was executed.
    */
   epoch: number,
@@ -306,11 +334,12 @@ export interface Provider {
   /**
    * Wait for a broadcast transaction to finish executing.
    * 
-   * This will throw an `Error` if the transaction fails for any reason.
+   * This will throw an `TransactionFailedError` if the transaction fails for any reason.
    *
    * @param txHash Hash of transaction to wait for.
+   * @throws {TransactionFailedError} If transaction fails.
    */
-  waitForTransaction: (txHash: string) => Promise<void>,
+  waitForTransaction: (txHash: string) => Promise<TransactionOnChain>,
   /**
    * Get information about a transaction.
    *
@@ -345,12 +374,12 @@ export interface Wallet extends Signer {
 }
 
 
+
+
 /**
- * Options for interacting with a contract.
- * 
- * This includes default transaction settings as well as the [[Provider]] to use for contract querying. 
+ * Options for interacting sending transactions.
  */
-export interface ContractOptions {
+export interface TransactionOptions {
   /**
    * Sender bech32 address.
    */
@@ -378,11 +407,82 @@ export interface ContractOptions {
    */
   meta?: object,
   /**
-   * The [[Provider]] to use.
+   * The provider to use.
    */
   provider?: Provider,
   /**
-   * The signer to use.
+   * The transaction signer to use.
    */
   signer?: Signer,
+}
+
+
+
+/**
+ * ESDT token configuration.
+ */
+export interface TokenConfig {
+  /**
+   * Whether more units of this token can be minted by the owner after initial issuance, increasing the supply.
+   */
+  canMint: boolean,
+  /**
+   * Whether users may burn some of their tokens, reducing the supply.
+   */
+  canBurn: boolean,
+  /**
+   * Whether the owner may prevent all transactions of the token, apart from minting and burning.
+   */
+  canPause: boolean,
+  /**
+   * Whether the owner may freeze a specific account, preventing transfers to and from that account.
+   */
+  canFreeze: boolean,
+  /**
+   * Whether the owner may wipe out the tokens held by a frozen account, reducing the supply.
+   */
+  canWipe: boolean,
+  /**
+   * Whether the owner may transfer ownership of the token to another account.
+   */
+  canChangeOwner: boolean,
+  /**
+   * Whether the owner may change the token configuration.
+   */
+  canUpgrade: boolean,
+}
+
+
+/**
+ * ESDT token information.
+ */
+export interface TokenInfo {
+  /**
+   * Token identifier.
+   */
+  id: string,
+  /**
+   * The user-friendly name of the token.
+   */
+  name: string,
+  /**
+   * The ticker of the token.
+   */
+  ticker: string,
+  /**
+   * The bech32 address of the owner of this token.
+   */
+  owner: string,
+  /**
+   * Total supply.
+   */
+  supply: string,
+  /**
+   * Whether token is currently paused.
+   */
+  paused: boolean,
+  /**
+   * Token configuration.
+   */
+  config: TokenConfig,
 }

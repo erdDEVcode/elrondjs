@@ -48,9 +48,8 @@ export const parseRawTransaction = (tx: any): TransactionOnChain => {
   return {
     raw: tx,
     ...tx,
-    status,
-    timestamp: new Date(tx.timestamp * 1000),
     smartContractErrors,
+    status,
   }
 }
 

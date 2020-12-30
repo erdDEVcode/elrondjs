@@ -260,47 +260,9 @@ export interface TransactionOnChain extends Transaction {
    */
   smartContractErrors: string[],
   /**
-   * Epoch in which transaction was executed.
-   */
-  epoch: number,
-  /**
-   * Nonce - account/shard?.
-   */
-  nonce: number
-  /**
-   * Epoch round in which transaction was executed.
-   */
-  round: number,
-  /**
-   * Gas price.
-   * 
-   * Denominated in the smallest unit (10^18).
-   */
-  gasPrice: number,
-  /**
-   * Gas limit.
-   */
-  gasLimit: number,
-  /**
-   * Shard of receiver address.
-   */
-  destinationShard: number,
-  /**
-   * Shard of sender address.
-   */
-  sourceShard: number,
-  /**
    * Transaction result status.
    */
   status: TransactionStatus,
-  /**
-   * Transaction signature.
-   */
-  signature: string,
-  /**
-   * Transaction execution time.
-   */
-  timestamp: Date,
 }
 
 /**
@@ -418,71 +380,71 @@ export interface TransactionOptions {
 
 
 
-/**
- * ESDT token configuration.
- */
-export interface TokenConfig {
-  /**
-   * Whether more units of this token can be minted by the owner after initial issuance, increasing the supply.
-   */
-  canMint: boolean,
-  /**
-   * Whether users may burn some of their tokens, reducing the supply.
-   */
-  canBurn: boolean,
-  /**
-   * Whether the owner may prevent all transactions of the token, apart from minting and burning.
-   */
-  canPause: boolean,
-  /**
-   * Whether the owner may freeze a specific account, preventing transfers to and from that account.
-   */
-  canFreeze: boolean,
-  /**
-   * Whether the owner may wipe out the tokens held by a frozen account, reducing the supply.
-   */
-  canWipe: boolean,
-  /**
-   * Whether the owner may transfer ownership of the token to another account.
-   */
-  canChangeOwner: boolean,
-  /**
-   * Whether the owner may change the token configuration.
-   */
-  canUpgrade: boolean,
-}
+// /**
+//  * ESDT token configuration.
+//  */
+// export interface TokenConfig {
+//   /**
+//    * Whether more units of this token can be minted by the owner after initial issuance, increasing the supply.
+//    */
+//   canMint: boolean,
+//   /**
+//    * Whether users may burn some of their tokens, reducing the supply.
+//    */
+//   canBurn: boolean,
+//   /**
+//    * Whether the owner may prevent all transactions of the token, apart from minting and burning.
+//    */
+//   canPause: boolean,
+//   /**
+//    * Whether the owner may freeze a specific account, preventing transfers to and from that account.
+//    */
+//   canFreeze: boolean,
+//   /**
+//    * Whether the owner may wipe out the tokens held by a frozen account, reducing the supply.
+//    */
+//   canWipe: boolean,
+//   /**
+//    * Whether the owner may transfer ownership of the token to another account.
+//    */
+//   canChangeOwner: boolean,
+//   /**
+//    * Whether the owner may change the token configuration.
+//    */
+//   canUpgrade: boolean,
+// }
 
 
-/**
- * ESDT token information.
- */
-export interface TokenInfo {
-  /**
-   * Token identifier.
-   */
-  id: string,
-  /**
-   * The user-friendly name of the token.
-   */
-  name: string,
-  /**
-   * The ticker of the token.
-   */
-  ticker: string,
-  /**
-   * The bech32 address of the owner of this token.
-   */
-  owner: string,
-  /**
-   * Total supply.
-   */
-  supply: string,
-  /**
-   * Whether token is currently paused.
-   */
-  paused: boolean,
-  /**
-   * Token configuration.
-   */
-  config: TokenConfig,
-}
+// /**
+//  * ESDT token information.
+//  */
+// export interface TokenInfo {
+//   /**
+//    * Token identifier.
+//    */
+//   id: string,
+//   /**
+//    * The user-friendly name of the token.
+//    */
+//   name: string,
+//   /**
+//    * The ticker of the token.
+//    */
+//   ticker: string,
+//   /**
+//    * The bech32 address of the owner of this token.
+//    */
+//   owner: string,
+//   /**
+//    * Total supply.
+//    */
+//   supply: string,
+//   /**
+//    * Whether token is currently paused.
+//    */
+//   paused: boolean,
+//   /**
+//    * Token configuration.
+//    */
+//   config: TokenConfig,
+// }

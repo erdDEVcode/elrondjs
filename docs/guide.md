@@ -99,7 +99,7 @@ const {
 
 If you run this without any errors then you'll have just sent a transaction to the delegation contract to claim pending rewards.
 
-## Connecting to a network
+## Querying a network
 
 Communication with an Elrond network is done through a `Provider` instance.
 
@@ -111,7 +111,7 @@ const { ProxyProvider } = require('elrondjs')
 const provider = new ProxyProvider('https://gateway.elrond.com')
 ```
 
-_Note: `gateway.elrond.com` is the official Elrond mainnet proxy maintained by the Elrond team. Feel free to replace with any other Proxy endpoint_.
+_Note: `gateway.elrond.com` is the official Elrond mainnet proxy maintained by the Elrond team. Feel free to replace this with your own Proxy endpoint address_.
 
 Providers must implement the following API:
 
@@ -119,10 +119,12 @@ Providers must implement the following API:
 * `getAddress: (address: string) => Promise<Address>` - get information about an address
 * `queryContract: (params: ContractQueryParams) => Promise<ContractQueryResult>` - read from a contract
 * `sendSignedTransaction: (signedTx: SignedTransaction) => Promise<TransactionReceipt>` - broadcast a transaction to the network
-* `waitForTransaction: (txHash: string) => Promise<void>` - wait for transaction to finish executing on the network
+* `waitForTransaction: (txHash: string) => Promise<TransactionOnChain>` - wait for transaction to finish executing on the network
 * `getTransaction: (txHash: string) => Promise<TransactionOnChain>` - get transaction information
 
-For example, basic information about a network can be queried using the `getNetworkConfig()` method, to obtain a `NetworkConfig` instance:
+### Get network config
+
+Basic configuration information about a network can be queried using the `getNetworkConfig()` method, to obtain a `NetworkConfig` instance:
 
 ```js
 await provider.getNetworkConfig()
@@ -141,9 +143,39 @@ For example, running the above on the public mainnet returns:
 }
 ```
 
-## Wallets
+### Get address information
 
-Elrondjs has built-in support for loading the following types of user wallets and classes for each:
+To get information about an address:
+
+```js
+await provider.getAddress('erd1qqqqq...')
+```
+
+This will return an `AddressInfo` object with the following structure:
+
+* `address` - bech32 format address 
+* `balance` - eGLD balance
+* `nonce` - next transaction nonce
+* `code` - bytecode at address (empty if not a smart contract address)
+
+
+## Signing transactions
+
+To sign transactions a `Signer` implementation is needed:
+
+```js
+{
+  signTransaction: (tx: Transaction, provider: Provider) => Promise<SignedTransaction>,
+}
+```
+
+Any object that implements the above interface can be used to sign transactions. 
+
+### Wallets
+
+A `Wallet` usually represents an externally-owned address and extends the `Signer` interface.
+
+Elrondjs has built-in support for loading the following types of user wallets:
 
 * `BasicWallet` - Mnemonic, PEM and/or JSON files
 * `LedgerWallet` - Ledger hardware wallets
@@ -156,7 +188,7 @@ const { BasicWallet } = require('elrondjs')
 const wallet = BasicWallet.fromMenmonic('tourist judge garden detail summer differ want voyage foot good design text')
 ```
 
-Creating a "dummy" wallet with a random mnemonic can be done:
+Sometimes you may wish to create a _dummy_ wallet for testing purposes. This can be done as follows:
 
 ```js
 const { BasicWallet } = require('elrondjs')
@@ -164,7 +196,7 @@ const { BasicWallet } = require('elrondjs')
 const wallet = BasicWallet.generateRandom()
 ```
 
-To connect to a Ledger hardware wallet one or more "transports" will need to be passed in. For example, to connect to Ledger in a browser environment:
+To connect to a Ledger hardware wallet one or more [transports](https://github.com/LedgerHQ/ledgerjs#ledgerhqhw-transport-) will need to be passed in. For example, to connect to Ledger in a browser environment:
 
 ```js
 const TransportWebUsb = require('@ledgerhq/hw-transport-webusb').default
@@ -176,19 +208,35 @@ const { LedgerWallet } = require('elrondjs')
 const wallet = await LedgerWallet.connect([ TransportWebUsb, TransportU2F ])
 ```
 
+Wallets additionally provide the ability to retrieve the signer address:
+
+```js
+const wallet = BasicWallet.generateRandom()
+
+console.log( wallet.address() ) // erd1q.....
+```
+
 ## Transactions
 
-Transactions may involve value transfers (eGLD and tokens) and/or smart contract interactions. The minimum structure of a `Transaction` is:
+Transactions may involve value transfers (eGLD and tokens) and/or smart contract interactions. 
+
+An unsigned `Transaction` must at minimum contain:
 
 * `sender` - sender address in bech32 format
 * `receiver` - receiver address in bech32 format
-* `value` - Amount of eGLD to transfer (denominated in `10^18`, i.e. `10^18` represents `1 eGLD`)
+* `value` - Amount of eGLD to transfer (denominated in `10^18`, i.e. the value `1 * 10^18` represents `1 eGLD`)
 
-They may also additionally specify the following properties, though if using the `Contract` class then these will usually get set automatically:
+They may also additionally specify the following properties:
 
+* `nonce` - the nonce to use
 * `gasPrice` - gas price to use
 * `gasLimit` - gas limit to use
 * `data` - data string to send alongside transaction
+* `meta` - additional configuration to pass to the signer
+
+_Note: the `meta` parameter is non-standard and optional, and is meant for customizing the UI and/or performing custom configuration on the `Signer`. It does not get passed to the network._
+
+### Simple transaction
 
 A simple transaction can be constructed as follows:
 
@@ -200,7 +248,7 @@ const tx = {
 }
 ```
 
-To sign a transaction we need a `Signer` instance. The `BasicWallet` class implements the `Signer` interface and thus an instance of it can be used to sign a `Transaction`:
+To sign a transaction we need a `Signer` instance. The `BasicWallet` class implements the `Signer` interface and thus an instance of it can be used to sign a transaction:
 
 ```js
 const wallet = ... // create a wallet instance
@@ -220,9 +268,36 @@ const txReceipt = await provider.sendSignedTransaction(signedTx)
 Once a transaction has been broadcast to the network a `TransactionReceipt` is returned. This contains the transaction hash which can be used to wait until the transaction has finished executing:
 
 ```js
-// This will throw an Error if the transaction fails
-await provider.waitForTransaction(txReceipt.hash)
+try {
+  const txOnChain = await provider.waitForTransaction(txReceipt.hash)
+
+  console.log('Succeeded', txOnChain)
+} catch (err) {
+  console.error('Failed')
+
+  // The "transaction" contains the TransactionOnChain instance
+  console.log(err.transaction)
+}
 ```
+
+### Auto-calculate gas 
+
+The gas price and gas limits can be auto-calculated:
+
+```js
+const tx = await setDefaultGasPriceAndLimit({
+  sender: 'erd1tmz6ax3ylejsa3n528uedztrnp70w4p4ptgz23harervvnnf932stkw6h9',
+  receiver: 'erd19hdzdg2tmjmfk2kvplsssf3ps7rnyaumhpjhg0l50r938hftkh2qr4cu92',
+  value: '2000000000000000000', // 2 eGLD
+  data: 'test',
+}, provider)
+
+/*
+tx.gasPrice and tx.gasLimit will now be set according to network defaults
+*/
+```
+
+### Query transaction status
 
 And at any time the status of a transaction can be queried through the provider to obtain a `TransactionOnChain` instance:
 
@@ -230,12 +305,89 @@ And at any time the status of a transaction can be queried through the provider 
 const txOnChain = await provider.getTransaction(txReceipt.hash)
 ```
 
+This returns an object with the following properties (in addition to core `Transaction` properties):
+
+* `raw` - raw transaction data
+* `smartContractErrors` - list of smart contract error messages. If non-empty then transaction is marked as failed.
+* `status` - transaction status - success, pending or failed
+
+
 ## Contracts
 
-The `Contract` class provides the necessary methods for interacting with smart contracts. To get an instance to talk to an existing on-chain contract:
+The `Contract` class provides the necessary methods for interacting with smart contracts. 
+
+### Deploying
+
+To deploy a new contract:
 
 ```js
-const contract = await Contract.at('contract bech32 address here', {
+const receipt = await Contract.deploy(/* bytecode */, /* contract metadata */, /* constructor arguments */, {
+  provider: // Provider instance,
+  signer: // Signer instance,
+  sender: // sender address
+})
+```
+
+For example:
+
+```js
+const { BasicWallet, ProxyProvider, Contract, numberToHex } = require('elrondjs')
+
+const provider = new ProxyProvider('https://gateway.elrond.com')
+
+const wallet = BasicWallet.generateRandom()
+
+const adderWasm = fs.readFileSync(path.join(__dirname, 'adder.wasm'))
+
+const { contract, hash } = await Contract.deploy(addderWasm, { upgradeable: true }, [ numberToHex(3) ], {
+  provider,
+  signer: wallet,
+  sender: wallet.address(),
+})
+
+console.log(`Contract will be deployed at: ${contract.address}`)
+
+await provider.waitForTransaction(hash)
+
+// At this point we can use the "contract" instance, knowing that the contract has been deployed successfully
+```
+
+Although a `Contract` instance gets returned in the call to `Contract.deploy()` it is important to wait until the transaction has succeeded on chain (as shown in the example above). 
+
+Contract metadata specifies the following properties about a contract and can be changed via an upgrade:
+
+* `upgradeable` - whether this contract can be upgraded (default is no)
+* `readable` - whether other contracts can read this contract's data without calling a getter
+* `payable` - whether this contract can receive eGLD and ESDT tokens via a transfer (without calling one of its methods).
+
+### Pre-calculate address
+
+The contract deploment address is based on the sender's address and nonce and nothing else. It can thus easily be calculated ahead-of-time using:
+
+```js
+const expectedAddress = await Contract.computeDeployedAddress('erd1q...', provider)
+```
+
+We can go further and calculate the expected contract deployment address for a specific nonce:
+
+```js
+const expectedAddress = await Contract.computeDeployedAddressWithNonce('erd1q...', 23)
+```
+
+
+### Querying
+
+To get a `Contract` instance to talk to an existing on-chain contract:
+
+```js
+const contract = await Contract.at('erdq1...')
+```
+
+If we supply a `Provider` then it will be queried to ensure that a contract exists at the given address:
+
+```js
+// this will throw an error if contract doesn't exist at the addres
+const contract = await Contract.at('erdq1...', {
   provider: // Provider instance,
 })
 ```
@@ -255,6 +407,8 @@ await contract.query('method name', [ /* method arguments */ ], {
   provider: ...// another Provider instance to use instead of the one passed in to the constructor
 })
 ```
+
+### Parsing return values
 
 When a contract is queries the return value is an array of one or more values. For example, the `getUserStakeByType` method of the Mainnet staking contract returns 5 values:
 
@@ -290,12 +444,14 @@ types are:
 * `HEX` - hex strings
 * `STRING` - strings
 
+## Invoking via transaction
+
 If we wish to send a transaction to a contract (i.e. write data) we need to pass in a `Signer` and set the `sender` address for transactions:
 
 ```js
 const contract = await Contract.at('contract bech32 address here', {
   provider: ...// Provider instance,
-  signer: ...// Singer instance, e.g. an BasicWallet
+  signer: ...// Signer instance, e.g. a wallet
   sender: ...// wallet bech32 address
 })
 
@@ -336,17 +492,43 @@ const { hash } = await contract.invoke('method name', [ /* method arguments */])
 await provider.waitForTransaction(hash)
 ```
 
-Although `invoke()` does everything needed to send a transation you can also choose to do the steps manually by obtaining a  `TransactionBuilder` instance:
+### Upgrading
+
+If a contract's current metadata marks it as upgradeable then it can be upgraded by its owner. This means that the bytecode gets changed but the 
+contract on-chain address stays the same.
+
+An example:
 
 ```js
-// get ContractInvocationBuilder (instance of a TransactionBuilder)
-const contractInvocationBuilder = await contract.createInvocation('method name', [ /* method arguments */ ])
-// get Transaction object
-const tx = await contractInvocationBuilder.toTransaction()
-// sign it
-const signedTx = await wallet.signTransaction(tx, provider)
-// send it
-const txReceipt = await provider.sendSignedTransaction(signedTx)
+const contract = await Contract.at('erdq1...', {
+  provider,
+  signer: wallet,
+  sender: wallet.address(),
+})
+
+const { hash } = await contract.upgrade(/*new code wasm */, /* new metadata */, /* constructor args */)
+
+await provider.waitForTransaction(hash)
+```
+
+### Function arguments
+
+When passing arguments to contract functions it is necessary to format them as hex strings. 
+
+The following utility methods are made available to facilitate this:
+
+* `numberToHex()` - convert number to hex representation
+* `stringToHex()` - convert string to hex representation
+
+For example, given a contract function `getValues()` which takes a string and an integer as parameters:
+
+```js
+const c = Contract.at('erd1qq....', { provider })
+
+const ret = await c.query('getValues', [
+  stringToHex("name"),
+  numberToHex(5)
+])
 ```
 
 ## Typescript support

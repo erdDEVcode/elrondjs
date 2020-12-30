@@ -1,3 +1,5 @@
+## [1.12.1](https://github.com/erdDEVcode/elrondjs/compare/v1.12.0...v1.12.1) (2020-12-30)
+
 # [1.12.0](https://github.com/erdDEVcode/elrondjs/compare/v1.11.1...v1.12.0) (2020-12-29)
 
 

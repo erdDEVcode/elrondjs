@@ -1,6 +1,6 @@
 import { Provider, Transaction, TransactionOnChain, TransactionOptions, TransactionStatus } from "../common"
 import { TransactionFailedError } from "../errors"
-import { ARGS_DELIMITER } from "./utils"
+import { ARGS_DELIMITER, stringToHex } from "./utils"
 
 
 
@@ -198,6 +198,20 @@ export const verifyTransactionOptions = (options?: TransactionOptions, ...fields
       }
     })
   }
+}
+
+
+
+/**
+ * Generate transaction data arguments from given key-value map.
+ * @param keyValueMap The key-value map.
+ */
+export const convertMapToDataArguments = (keyValueMap: object): string[] => {
+  return Object.keys(keyValueMap).reduce((m, v) => {
+    m.push(stringToHex(v))
+    m.push(stringToHex((keyValueMap as any)[v] ? 'true' : 'false'))
+    return m
+  }, [] as string[])
 }
 
 

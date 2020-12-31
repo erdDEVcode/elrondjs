@@ -1,4 +1,5 @@
 import { Buffer } from 'buffer'
+import BigNum from '../bignum'
 
 import { 
   ContractQueryResult, 
@@ -16,12 +17,12 @@ import { TransactionOptionsBase, joinDataArguments, TransactionBuilder, verifyTr
 /**
  * @internal
  */
-const queryResultValueToHex = (val: string) => `0x${Buffer.from(val, 'base64').toString('hex')}`  
+const queryResultValueToHex = (val: string) => Buffer.from(val, 'base64').toString('hex')
 
 /**
  * @internal
  */
-const queryResultValueToString = (val: string) => `0x${Buffer.from(val, 'base64').toString('utf8')}`  
+const queryResultValueToString = (val: string) => Buffer.from(val, 'base64').toString('utf8')
 
 
 /**
@@ -42,30 +43,39 @@ export interface ContractDeploymentTransactionReceipt extends TransactionReceipt
  * @param result The query result.
  * @param options Parsing options.
  */
-export const parseQueryResult = (result: ContractQueryResult, options: ContractQueryResultParseOptions): (string | number) => {
+export const parseQueryResult = (result: ContractQueryResult, options: ContractQueryResultParseOptions): (string | BigNum | boolean) => {
   options.index = options.index || 0
 
-  const val = result.returnData[options.index]
+  const inputVal = result.returnData[options.index]
+
+  const parsed = (options.regex || /(.+)/).exec(queryResultValueToString(inputVal))
+  const val = (parsed && parsed[1]) ? parsed[1] : ''
 
   switch (options.type) {
-    case ContractQueryResultDataType.INT:
+    case ContractQueryResultDataType.BOOLEAN: {
       if (!val) {
-        return 0
+        return false
       } else {
-        return parseInt(queryResultValueToHex(val), 16)
+        return val.includes('true')
       }
-    case ContractQueryResultDataType.HEX:
+    }
+    case ContractQueryResultDataType.INT: {
+      if (!val) {
+        return new BigNum(0)
+      } else {
+        return new BigNum(val)
+      }
+    }
+    case ContractQueryResultDataType.ADDRESS: {
+      return hexStringToAddress(queryResultValueToHex(inputVal))
+    }
+    case ContractQueryResultDataType.HEX: {
       if (!val) {
         return '0x0'
       } else {
-        return queryResultValueToHex(val)
+        return queryResultValueToHex(inputVal)
       }
-    case ContractQueryResultDataType.STRING:
-        if (!val) {
-          return ''
-        } else {
-          return queryResultValueToString(val)
-        }
+    }
     default:
       return val
   }

@@ -1,6 +1,7 @@
 import Elrond from '@elrondnetwork/elrond-core-js'
 import { Buffer } from 'buffer'
 import createKeccakHash from 'keccak'
+import BigNum from '../bignum'
 
 import { ContractMetadata } from '../common'
 
@@ -31,7 +32,7 @@ export const stringToHex = (arg: string): string => {
  * 
  * @param arg number.
  */
-export const numberToHex = (arg: number): string => {
+export const numberToHex = (arg: number| BigNum): string => {
   let str = arg.toString(16)
   if (str.length % 2 !== 0) {
     str = `0${str}`

@@ -440,6 +440,7 @@ The `index` parameter above refers to the index of the desired value in the retu
 parameter specifies the expected data type of the final parsed result. Thus, in this example `waitingStake` will be of type `Number`. The currently supported 
 types are:
 
+* `BOOLEAN` - booleans (`true` or `false`)
 * `INT` - integers
 * `HEX` - hex strings
 * `STRING` - strings

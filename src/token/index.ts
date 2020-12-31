@@ -8,9 +8,10 @@ import {
 } from '../common'
 
 
-import { stringToHex, numberToHex, addressToHexString, ARGS_DELIMITER, joinDataArguments, TransactionOptionsBase, TransactionBuilder } from '../lib'
+import { stringToHex, numberToHex, addressToHexString, ARGS_DELIMITER, joinDataArguments, TransactionOptionsBase, TransactionBuilder, convertMapToDataArguments, hexStringToAddress } from '../lib'
 
 import { Contract, parseQueryResult } from '../contract'
+import BigNum from '../bignum'
 
 
 
@@ -85,6 +86,15 @@ export class Token extends TransactionOptionsBase {
 
 
   /**
+   * Get token id.
+   */
+  public get id () {
+    return this._id
+  }
+
+
+
+  /**
    * Get all token identifiers in system.
    * @param options Transaction options for interacting with the blockchain. These will be the default options used for all subsequent operations.
    */
@@ -107,31 +117,43 @@ export class Token extends TransactionOptionsBase {
    *
    * @param name Human-readable name of token.
    * @param ticker Ticker name of token.
-   * @param initialSupply Initial total supply of the token.
+   * @param initialSupply Initial total supply of the token, taking into account the no. of decimal places. Denominated in base-10.
+   * @param numDecimals No. of decimals token balances have. The recommended value is 18.
+   * @param initialConfig Initial token configuration.
    * @param options Transaction options for interacting with the blockchain. These will be the default options used for all subsequent operations.
    */
-  public static async new(name: string, ticker: string, initialSupply: number, options: TransactionOptions): Promise<void> {
+  public static async new(name: string, ticker: string, initialSupply: string, numDecimals: number = 18, initialConfig: TokenConfig, options: TransactionOptions): Promise<Token> {
     const c = new Contract(METACHAIN_TOKEN_CONTRACT, options)
     
-    // "@416c696365546f6b656e73" +
-    //   "@414c43" +
-    //   "@0ffb"
-
     const tx = await c.invoke('issue', [
-      '416c696365546f6b656e73',//stringToHex(name),
-      '414c43',//stringToHex(ticker),
-      '0ffb',//numberToHex(initialSupply)
+      stringToHex(name),
+      stringToHex(ticker),
+      new BigNum(initialSupply).toString(16),
+      numberToHex(numDecimals),
+      ...convertMapToDataArguments(initialConfig)
     ], {
       gasLimit: TOKEN_MGMT_STANDARD_GAS_COST,
       value: '5000000000000000000' /* 5 eGLD */
     })
 
-    console.log(await options.provider!.waitForTransaction(tx.hash))
+    await options.provider!.waitForTransaction(tx.hash)
 
-    // TODO: should return Token instance...
-    //
-    // const id = 'foo' // TODO: need to obtain token id from transaction results and then 
-    // return Token.load(id, options)
+    // find out token id
+    const possibleIds = (await Token.getAllTokenIds(options)).reverse().filter(id => id.includes(`${ticker}-`))
+
+    for (let id of possibleIds) {
+      const t = new Token(id, c, options)
+      try {
+        const info = await t.getInfo()
+        if (info.name === name && info.supply === initialSupply.toString() && info.owner === options.sender) {
+          return t
+        }
+      } catch (err) {
+        /* if id invalid then skip */
+      }
+    }
+
+    throw new Error(`Token created, but unable to retrieve token id`)
   }
 
 
@@ -170,17 +192,18 @@ export class Token extends TransactionOptionsBase {
       id: this._id,
       name: (parseQueryResult(ret, { type: ContractQueryResultDataType.STRING, index: 0 }) as string),
       ticker: this._id.substr(0, this._id.indexOf('-')),
-      owner: (parseQueryResult(ret, { type: ContractQueryResultDataType.STRING, index: 1 }) as string),
-      supply: (parseQueryResult(ret, { type: ContractQueryResultDataType.STRING, index: 2 }) as string),
-      paused: (parseQueryResult(ret, { type: ContractQueryResultDataType.STRING, index: 4 }) as string).includes('true'),
+      owner: (parseQueryResult(ret, { type: ContractQueryResultDataType.ADDRESS, index: 1 }) as string),
+      supply: (parseQueryResult(ret, { type: ContractQueryResultDataType.INT, index: 2 }) as BigNum).toString(),
+      decimals: (parseQueryResult(ret, { type: ContractQueryResultDataType.INT, index: 4, regex: /NumDecimals\-(.+)/ }) as BigNum).toNumber(),
+      paused: (parseQueryResult(ret, { type: ContractQueryResultDataType.BOOLEAN, index: 5, regex: /IsPaused\-(.+)/ }) as boolean),
       config: {
-        canUpgrade: (parseQueryResult(ret, { type: ContractQueryResultDataType.STRING, index: 5 }) as string).includes('true'),
-        canMint: (parseQueryResult(ret, { type: ContractQueryResultDataType.STRING, index: 6 }) as string).includes('true'),
-        canBurn: (parseQueryResult(ret, { type: ContractQueryResultDataType.STRING, index: 7 }) as string).includes('true'),
-        canChangeOwner: (parseQueryResult(ret, { type: ContractQueryResultDataType.STRING, index: 8 }) as string).includes('true'),
-        canPause: (parseQueryResult(ret, { type: ContractQueryResultDataType.STRING, index: 9 }) as string).includes('true'),
-        canFreeze: (parseQueryResult(ret, { type: ContractQueryResultDataType.STRING, index: 10 }) as string).includes('true'),
-        canWipe: (parseQueryResult(ret, { type: ContractQueryResultDataType.STRING, index: 11 }) as string).includes('true'),
+        canUpgrade: (parseQueryResult(ret, { type: ContractQueryResultDataType.BOOLEAN, index: 6, regex: /CanUpgrade\-(.+)/ }) as boolean),
+        canMint: (parseQueryResult(ret, { type: ContractQueryResultDataType.BOOLEAN, index: 7, regex: /CanMint\-(.+)/ }) as boolean),
+        canBurn: (parseQueryResult(ret, { type: ContractQueryResultDataType.BOOLEAN, index: 8, regex: /CanBurn\-(.+)/ }) as boolean),
+        canChangeOwner: (parseQueryResult(ret, { type: ContractQueryResultDataType.BOOLEAN, index: 9, regex: /CanChangeOwner\-(.+)/ }) as boolean),
+        canPause: (parseQueryResult(ret, { type: ContractQueryResultDataType.BOOLEAN, index: 10, regex: /CanPause\-(.+)/ }) as boolean),
+        canFreeze: (parseQueryResult(ret, { type: ContractQueryResultDataType.BOOLEAN, index: 11, regex: /CanFreeze\-(.+)/ }) as boolean),
+        canWipe: (parseQueryResult(ret, { type: ContractQueryResultDataType.BOOLEAN, index: 12, regex: /CanWipe\-(.+)/ }) as boolean),
       }
     }
   }
@@ -330,11 +353,7 @@ export class Token extends TransactionOptionsBase {
    * @param options Transaction options to override the default ones with.
    */
   public async updateConfig(newConfig: TokenConfig, options?: TransactionOptions): Promise<TransactionReceipt> {
-    const data = Object.keys(newConfig).reduce((m, v) => {
-      m.push(stringToHex(v))
-      m.push(stringToHex((newConfig as any)[v] ? 'true' : 'false'))
-      return m
-    }, [] as string[])
+    const data = convertMapToDataArguments(newConfig)
 
     return await this._contractInstance.invoke('controlChanges', [
       stringToHex(this._id),

@@ -32,8 +32,8 @@ export const stringToHex = (arg: string): string => {
  * 
  * @param arg number.
  */
-export const numberToHex = (arg: number| BigNum): string => {
-  let str = arg.toString(16)
+export const numberToHex = (arg: any): string => {
+  let str = new BigNum(arg).toString(16).substr(2)
   if (str.length % 2 !== 0) {
     str = `0${str}`
   }

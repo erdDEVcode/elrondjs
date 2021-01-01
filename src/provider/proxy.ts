@@ -9,6 +9,7 @@ import {
   TransactionReceipt,
   TransactionOnChain, 
   TransactionStatus,
+  TokenData,
 } from '../common'
 
 /**
@@ -69,6 +70,18 @@ export class ProxyProvider extends Api implements Provider {
   }
 
   /**
+   * Sanitize balance value returned from the Elrond proxy.
+   * @param balance 
+   */
+  protected _sanitizeBalance (balance: string): string {
+    if (balance === '<nil>') {
+      return '0'
+    } else {
+      return balance
+    }
+  }
+
+  /**
    * Parse a reponse.
    * 
    * @param data The returned data to parse.
@@ -106,7 +119,21 @@ export class ProxyProvider extends Api implements Provider {
 
     const { account } = this._parseResponse(ret, 'Error fetching address info')
 
-    return account
+    return {
+      ...account,
+      balance: this._sanitizeBalance(account.balance),
+    }
+  }
+
+  public async getESDTData(address: string, token: string): Promise<TokenData> {
+    const ret = await this._call(`/address/${address}/esdt/${token}`)
+
+    const { tokenData } = this._parseResponse(ret, 'Error fetching ESDT info')
+
+    return {
+      id: token,
+      balance: this._sanitizeBalance(tokenData.balance),
+    }
   }
 
   public async queryContract(params: ContractQueryParams): Promise<ContractQueryResult> {

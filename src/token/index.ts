@@ -124,11 +124,11 @@ export class Token extends TransactionOptionsBase {
    */
   public static async new(name: string, ticker: string, initialSupply: string, numDecimals: number = 18, initialConfig: TokenConfig, options: TransactionOptions): Promise<Token> {
     const c = new Contract(METACHAIN_TOKEN_CONTRACT, options)
-    
+
     const tx = await c.invoke('issue', [
       stringToHex(name),
       stringToHex(ticker),
-      new BigNum(initialSupply).toString(16),
+      numberToHex(initialSupply),
       numberToHex(numDecimals),
       ...convertMapToDataArguments(initialConfig)
     ], {
@@ -145,7 +145,7 @@ export class Token extends TransactionOptionsBase {
       const t = new Token(id, c, options)
       try {
         const info = await t.getInfo()
-        if (info.name === name && info.supply === initialSupply.toString() && info.owner === options.sender) {
+        if (info.name === name && info.supply === initialSupply && info.owner === options.sender) {
           return t
         }
       } catch (err) {

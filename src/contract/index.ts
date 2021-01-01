@@ -48,7 +48,7 @@ export const parseQueryResult = (result: ContractQueryResult, options: ContractQ
 
   const inputVal = result.returnData[options.index]
 
-  const parsed = (options.regex || /(.+)/).exec(queryResultValueToString(inputVal))
+  const parsed = inputVal ? (options.regex || /(.+)/).exec(queryResultValueToString(inputVal)) : null
   const val = (parsed && parsed[1]) ? parsed[1] : ''
 
   switch (options.type) {

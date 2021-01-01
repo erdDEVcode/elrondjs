@@ -31,7 +31,7 @@ export interface NetworkConfig {
 }
 
 /**
- * An Elrond address.
+ * Data for an Elrond address.
  * 
  * This may be an externally-owned account or a contract address.
  */
@@ -55,6 +55,24 @@ export interface Address {
    */
   code: string,
 }
+
+
+/**
+ * ESDT token data for an Elrond address.
+ * 
+ * This may be an externally-owned account or a contract address.
+ */
+export interface TokenData {
+  /**
+   * The token identifer.
+   */
+  id: string,
+  /**
+   * The token balance.
+   */
+  balance: string,
+}
+
 
 
 /**
@@ -291,6 +309,15 @@ export interface Provider {
    * @param address The address.
    */
   getAddress: (address: string) => Promise<Address>,
+  /**
+   * Get ESDT token for given address and token.
+   * 
+   * @param address The address.
+   * @param token The token id.
+   * 
+   * @return Balance as base-10 unsigned integer.
+   */
+  getESDTData: (address: string, token: string) => Promise<TokenData>,
   /**
    * Query a contract.
    * 

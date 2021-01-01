@@ -4,7 +4,6 @@ import {
   TokenInfo,
   TransactionReceipt,
   ContractQueryResultDataType,
-  Transaction,
 } from '../common'
 
 
@@ -35,7 +34,7 @@ const TOKEN_MGMT_STANDARD_GAS_COST = 51000000
 class TokenTransferBuilder extends TransactionBuilder {
   protected _receiver: string
   protected _tokenId: string
-  protected _amount: number
+  protected _amount: string
 
 
   /**
@@ -46,7 +45,7 @@ class TokenTransferBuilder extends TransactionBuilder {
    * @param amount No. of tokens to transfer.
    * @param options Transaction options.
    */
-  constructor(receiver: string, tokenId: string, amount: number, options?: TransactionOptions) {
+  constructor(receiver: string, tokenId: string, amount: string, options?: TransactionOptions) {
     super(options)
     this._receiver = receiver
     this._tokenId = tokenId
@@ -193,7 +192,7 @@ export class Token extends TransactionOptionsBase {
       name: (parseQueryResult(ret, { type: ContractQueryResultDataType.STRING, index: 0 }) as string),
       ticker: this._id.substr(0, this._id.indexOf('-')),
       owner: (parseQueryResult(ret, { type: ContractQueryResultDataType.ADDRESS, index: 1 }) as string),
-      supply: (parseQueryResult(ret, { type: ContractQueryResultDataType.INT, index: 2 }) as BigNum).toString(),
+      supply: (parseQueryResult(ret, { type: ContractQueryResultDataType.INT, index: 2, , regex: /(.+)/ }) as BigNum).toString(),
       decimals: (parseQueryResult(ret, { type: ContractQueryResultDataType.INT, index: 4, regex: /NumDecimals\-(.+)/ }) as BigNum).toNumber(),
       paused: (parseQueryResult(ret, { type: ContractQueryResultDataType.BOOLEAN, index: 5, regex: /IsPaused\-(.+)/ }) as boolean),
       config: {
@@ -210,14 +209,33 @@ export class Token extends TransactionOptionsBase {
 
 
   /**
+   * Get balance of given address.
+   * 
+   * @param address Address in bech-32 format.
+   * @param options Transaction options to override the default ones with.
+   */
+  public async balanceOf(address: string, options?: TransactionOptions): Promise<string> {
+    const opts = await this._mergeTransactionOptions(options, 'provider')
+
+    const { balance } = await opts.provider!.getESDTData(address, this.id)
+
+    return balance
+  }
+
+
+
+  /**
    * Transfer tokens to another address.
    * 
    * @param to Address to transfer to.
    * @param amount No. of tokens to transfer.
    * @param options Transaction options to override the default ones with.
    */
-  public async transfer(to: string, amount: number, options?: TransactionOptions): Promise<TransactionReceipt> {
-    const opts = this._mergeTransactionOptions(options, 'sender', 'provider', 'signer')
+  public async transfer(to: string, amount: string, options?: TransactionOptions): Promise<TransactionReceipt> {
+    const opts = this._mergeTransactionOptions({
+      gasLimit: 500000,
+      ...options
+    }, 'sender', 'provider', 'signer')
 
     const builder = new TokenTransferBuilder(to, this._id, amount, opts)
 
@@ -230,14 +248,17 @@ export class Token extends TransactionOptionsBase {
 
 
   /**
-   * Change the total supply of the token.
-   * @param newSupply New supply to set.
+   * Mint more tokens.
+   * 
+   * @param amount Amount to mint.
+   * @param address Address to mint to. If ommitted tokens will be minted to the current config owner.
    * @param options Transaction options to override the default ones with.
    */
-  public async mint(newSupply: number, options?: TransactionOptions): Promise<TransactionReceipt> {
+  public async mint(amount: string, address?: string, options?: TransactionOptions): Promise<TransactionReceipt> {
     return await this._contractInstance.invoke('mint', [
       stringToHex(this._id),
-      numberToHex(newSupply)
+      numberToHex(amount),
+      ...(address ? [ addressToHexString(address) ] : [])
     ], {
       gasLimit: TOKEN_MGMT_STANDARD_GAS_COST,
       ...options
@@ -249,7 +270,7 @@ export class Token extends TransactionOptionsBase {
    * @param amount Amount to burn.
    * @param options Transaction options to override the default ones with.
    */
-  public async burn(amount: number, options?: TransactionOptions): Promise<TransactionReceipt> {
+  public async burn(amount: string, options?: TransactionOptions): Promise<TransactionReceipt> {
     return await this._contractInstance.invoke('ESDTburn', [
       stringToHex(this._id),
       numberToHex(amount)

@@ -47,12 +47,12 @@ import { Contract, ProxyProvider, BasicWallet } from 'elrondjs'
   })
 
   // make the claim!
-  const { hash } = await c.invoke('claimRewards', [], {
+  const txReceipt = await c.invoke('claimRewards', [], {
     gasLimit: 250000000
   })
 
   // wait for transaction to complete
-  await proxy.waitForTransaction(hash)
+  await txReceipt.promise()
 })()
 ```
 

@@ -256,6 +256,10 @@ export interface TransactionReceipt {
    * The transaction hash, for tracking purposes.
    */
   hash: string,
+  /**
+   * Promise that resolves once transaction is complete
+   */
+  promise: () => Promise<TransactionOnChain>,
 }
 
 

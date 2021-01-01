@@ -1,4 +1,5 @@
 import { WALLETS } from 'narya'
+import delay from 'delay'
 
 import { expect, PROXY_ENDPOINT } from './utils'
 import { BasicWallet, ProxyProvider, Token } from '../dist/cjs'
@@ -91,20 +92,22 @@ describe('ESDT tokens', () => {
   describe('once issued', () => {
     let token: Token
 
-    beforeEach(async () => {
+    beforeAll(async () => {
+      const name = `RAM${~~(Math.random() * 1000)}`
+
       token = await Token.new(
-        'RamToken2',
-        'RAM2',
+        name,
+        name,
         '100000000000000000000', /* 100 * 10^18 */
         18,
         {
-          canBurn: false,
-          canChangeOwner: false,
-          canFreeze: false,
-          canMint: false,
-          canPause: false,
-          canUpgrade: false,
-          canWipe: false,
+          canBurn: true,
+          canChangeOwner: true,
+          canFreeze: true,
+          canMint: true,
+          canPause: true,
+          canUpgrade: true,
+          canWipe: true,
         },
         {
           provider,
@@ -112,17 +115,44 @@ describe('ESDT tokens', () => {
           sender,
         }
       )
+
+      // give time for data to be saved in node
+      await delay(15000)
     })
 
-    it.only('can be transferred', async () => {
-      // const initialBalance = await token.balanceOf(WALLETS.bob.bech32)
+    it('can be transferred', async () => {
+      await token.balanceOf(sender).should.eventually.eql('100000000000000000000')
 
-      // const { balance } await provider.getESDTData(, token.id)
+      const reciever = WALLETS.eve.bech32
+      const rec = await token.transfer(reciever, '100')
+      await rec.promise()
 
-      // const { hash } = token.transfer(WALLETS.eve.bech32, 1000)
-      // await provider.waitForTransaction(hash)
+      await token.balanceOf(reciever).should.eventually.eq('100')
+      await token.balanceOf(sender).should.eventually.eql('99999999999999999900')
+    })
 
-      // check balances
+    it('can mint more to the owner', async () => {
+      const rec = await token.mint('1')
+      await rec.promise()
+
+      await delay(15000)
+
+      await token.balanceOf(sender).should.eventually.eql('99999999999999999901')
+
+      const info = await token.getInfo()
+      expect(info.supply).to.eql('100000000000000000001')
+    })
+
+    it('can mint more to any address', async () => {
+      const rec = await token.mint('1', WALLETS.dan.bech32)
+      await rec.promise()
+      
+      await delay(15000)
+
+      await token.balanceOf(WALLETS.dan.bech32).should.eventually.eql('1')
+
+      const info = await token.getInfo()
+      expect(info.supply).to.eql('100000000000000000002')
     })
   })
 })

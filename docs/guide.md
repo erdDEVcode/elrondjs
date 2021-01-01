@@ -90,10 +90,10 @@ const {
   })
 
   // claim delegation rewards
-  const tx = await c.invoke('claimRewards')
+  const txReceipt = await c.invoke('claimRewards')
 
   // wait for transaction to complete
-  await proxy.waitForTransaction(tx.hash)
+  await txReceipt.promise()
 })()
 ```
 
@@ -265,7 +265,22 @@ A `SignedTransaction` can be broadcast to the network using a provider:
 const txReceipt = await provider.sendSignedTransaction(signedTx)
 ```
 
-Once a transaction has been broadcast to the network a `TransactionReceipt` is returned. This contains the transaction hash which can be used to wait until the transaction has finished executing:
+Once a transaction has been broadcast to the network a `TransactionReceipt` is returned. This contains a Promise which can be used to wait until the transaction has finished executing:
+
+```js
+try {
+  const txOnChain = await txReceipt.promise()
+
+  console.log('Succeeded', txOnChain)
+} catch (err) {
+  console.error('Failed')
+
+  // The "transaction" contains the TransactionOnChain instance
+  console.log(err.transaction)
+}
+```
+
+Note that we can also use `provider.waitForTransaction()` for the same effect:
 
 ```js
 try {
@@ -279,6 +294,7 @@ try {
   console.log(err.transaction)
 }
 ```
+
 
 ### Auto-calculate gas 
 
@@ -339,7 +355,7 @@ const wallet = BasicWallet.generateRandom()
 
 const adderWasm = fs.readFileSync(path.join(__dirname, 'adder.wasm'))
 
-const { contract, hash } = await Contract.deploy(addderWasm, { upgradeable: true }, [ numberToHex(3) ], {
+const { contract, promise } = await Contract.deploy(addderWasm, { upgradeable: true }, [ numberToHex(3) ], {
   provider,
   signer: wallet,
   sender: wallet.address(),
@@ -347,7 +363,7 @@ const { contract, hash } = await Contract.deploy(addderWasm, { upgradeable: true
 
 console.log(`Contract will be deployed at: ${contract.address}`)
 
-await provider.waitForTransaction(hash)
+await promise()
 
 // At this point we can use the "contract" instance, knowing that the contract has been deployed successfully
 ```
@@ -485,12 +501,12 @@ await contract.invoke('method name', [ /* method arguments */], {
 })
 ```
 
-The Provider can be used to monitor transaction progress:
+The Provider is used internally to monitor transaction progress:
 
 ```js
-const { hash } = await contract.invoke('method name', [ /* method arguments */])
+const txReceipt = await contract.invoke('method name', [ /* method arguments */])
 
-await provider.waitForTransaction(hash)
+await txReceipt.promise() // same as calling: provider.waitForTransaction(txReceipt.hash)
 ```
 
 ### Upgrading
@@ -507,9 +523,9 @@ const contract = await Contract.at('erdq1...', {
   sender: wallet.address(),
 })
 
-const { hash } = await contract.upgrade(/*new code wasm */, /* new metadata */, /* constructor args */)
+const txReceipt = await contract.upgrade(/*new code wasm */, /* new metadata */, /* constructor args */)
 
-await provider.waitForTransaction(hash)
+await txReceipt.promise()
 ```
 
 ### Function arguments

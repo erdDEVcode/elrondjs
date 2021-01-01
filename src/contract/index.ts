@@ -48,36 +48,69 @@ export const parseQueryResult = (result: ContractQueryResult, options: ContractQ
 
   const inputVal = result.returnData[options.index]
 
-  const parsed = inputVal ? (options.regex || /(.+)/).exec(queryResultValueToString(inputVal)) : null
-  const val = (parsed && parsed[1]) ? parsed[1] : ''
+  if (options.regex) {
+    const parsed = inputVal ? options.regex.exec(queryResultValueToString(inputVal)) : null
+    const parsedVal = (parsed && parsed[1]) ? parsed[1] : ''
 
-  switch (options.type) {
-    case ContractQueryResultDataType.BOOLEAN: {
-      if (!val) {
-        return false
-      } else {
-        return val.includes('true')
+    switch (options.type) {
+      case ContractQueryResultDataType.BOOLEAN: {
+        if (!parsedVal) {
+          return false
+        } else {
+          return parsedVal.includes('true')
+        }
+      }
+      case ContractQueryResultDataType.INT: {
+        if (!parsedVal) {
+          return new BigNum(0)
+        } else {
+          return new BigNum(parsedVal)
+        }
+      }
+      case ContractQueryResultDataType.ADDRESS: {
+        return hexStringToAddress(queryResultValueToHex(inputVal))
+      }
+      case ContractQueryResultDataType.HEX: {
+        if (!parsedVal) {
+          return '0x0'
+        } else {
+          return queryResultValueToHex(inputVal)
+        }
+      }
+      default: {
+        return parsedVal
       }
     }
-    case ContractQueryResultDataType.INT: {
-      if (!val) {
-        return new BigNum(0)
-      } else {
-        return new BigNum(val)
+  } else {
+    switch (options.type) {
+      case ContractQueryResultDataType.BOOLEAN: {
+        if (!inputVal) {
+          return false
+        } else {
+          return queryResultValueToString(inputVal).includes('true')
+        }
+      }
+      case ContractQueryResultDataType.INT: {
+        if (!inputVal) {
+          return new BigNum(0)
+        } else {
+          return new BigNum(queryResultValueToHex(inputVal))
+        }
+      }
+      case ContractQueryResultDataType.ADDRESS: {
+        return hexStringToAddress(queryResultValueToHex(inputVal))
+      }
+      case ContractQueryResultDataType.HEX: {
+        if (!inputVal) {
+          return '0x0'
+        } else {
+          return queryResultValueToHex(inputVal)
+        }
+      }
+      default: {
+        return queryResultValueToString(inputVal)
       }
     }
-    case ContractQueryResultDataType.ADDRESS: {
-      return hexStringToAddress(queryResultValueToHex(inputVal))
-    }
-    case ContractQueryResultDataType.HEX: {
-      if (!val) {
-        return '0x0'
-      } else {
-        return queryResultValueToHex(inputVal)
-      }
-    }
-    default:
-      return val
   }
 }
 

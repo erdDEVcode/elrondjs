@@ -165,7 +165,11 @@ export class ProxyProvider extends Api implements Provider {
 
     const { txHash: hash } = this._parseResponse(ret, 'Error sending transaction')
 
-    return { signedTransaction: signedTx, hash }
+    return { 
+      signedTransaction: signedTx, 
+      hash,
+      promise: () => this.waitForTransaction(hash), 
+    }
   }
 
   public async waitForTransaction(txHash: string): Promise<TransactionOnChain> {

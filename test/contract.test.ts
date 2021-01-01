@@ -4,6 +4,7 @@ import { WALLETS } from 'narya'
 
 import { expect, PROXY_ENDPOINT } from './utils'
 import { BasicWallet, ProxyProvider, Contract, stringToHex, parseQueryResult, ContractDeploymentTransactionReceipt, ContractQueryResultDataType, numberToHex } from '../dist/cjs'
+import BigNum from '../dist/cjs/bignum'
 
 
 describe('contracts', () => {
@@ -28,7 +29,7 @@ describe('contracts', () => {
       }
     )
 
-    await provider.waitForTransaction(receipt.hash)
+    await receipt.promise()
   })
 
   it('can be deployed', async () => {
@@ -40,9 +41,9 @@ describe('contracts', () => {
   it('can be queried', async () => {
     const sum = parseQueryResult(await receipt.contract.query('getSum'), {
       type: ContractQueryResultDataType.INT
-    })
+    }) as BigNum
 
-    expect(sum).to.equal(3)
+    expect(sum.toNumber()).to.equal(3)
   })
 
   it('can be invoked', async () => {
@@ -50,13 +51,13 @@ describe('contracts', () => {
       gasLimit: 2000000
     })
 
-    await provider.waitForTransaction(rec.hash)
+    await rec.promise()
 
     const sum2 = parseQueryResult(await receipt.contract.query('getSum'), {
       type: ContractQueryResultDataType.INT
-    })
+    }) as BigNum
 
-    expect(sum2).to.equal(8)
+    expect(sum2.toNumber()).to.equal(8)
   })
 
   it('can be found', async () => {
@@ -68,20 +69,20 @@ describe('contracts', () => {
 
     const sum = parseQueryResult(await receipt.contract.query('getSum'), {
       type: ContractQueryResultDataType.INT
-    })
+    }) as BigNum
 
-    expect(sum).to.equal(8)
+    expect(sum.toNumber()).to.equal(8)
   })
 
   describe('and upgrades', () => {
     it('are off by default', async () => {
-      const tx = await receipt.contract.upgrade(adderWasm, {}, [ 
+      const txReceipt = await receipt.contract.upgrade(adderWasm, {}, [ 
         numberToHex(3) 
       ], {
         gasLimit: 15000000
       })
 
-      await provider.waitForTransaction(tx.hash).should.be.rejected
+      await txReceipt.promise().should.be.rejected
     })
 
     it('are on if deployed as upgradeable', async () => {
@@ -99,7 +100,7 @@ describe('contracts', () => {
         }
       )
 
-      await provider.waitForTransaction(receipt.hash)
+      await receipt.promise()
 
       const rec2 = await receipt.contract.upgrade(adderWasm, {
         upgradeable: true,
@@ -109,7 +110,7 @@ describe('contracts', () => {
         gasLimit: 15000000
       })
 
-      await provider.waitForTransaction(rec2.hash)
+      await rec2.promise()
     })
   })
 })

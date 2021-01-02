@@ -302,6 +302,8 @@ export class Contract extends TransactionOptionsBase {
     const signedTx = await signer!.signTransaction(tx, provider!)
     const txReceipt = await provider!.sendSignedTransaction(signedTx)
 
+    await provider!.waitForTransaction(txReceipt.hash)
+
     return {
       ...txReceipt,
       contract: new Contract(computedAddress, {

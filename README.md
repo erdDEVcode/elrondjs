@@ -47,7 +47,7 @@ import { Contract, ProxyProvider, BasicWallet } from 'elrondjs'
   })
 
   // make the claim!
-  const txReceipt = await c.invoke('claimRewards', [], {
+  await c.invoke('claimRewards', [], {
     gasLimit: 250000000
   })
 

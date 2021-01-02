@@ -168,7 +168,7 @@ export class ProxyProvider extends Api implements Provider {
     return { 
       signedTransaction: signedTx, 
       hash,
-      promise: () => this.waitForTransaction(hash), 
+      promise: () => this.waitForTransaction(hash) 
     }
   }
 

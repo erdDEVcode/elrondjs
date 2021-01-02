@@ -192,7 +192,7 @@ export class Token extends TransactionOptionsBase {
       name: (parseQueryResult(ret, { type: ContractQueryResultDataType.STRING, index: 0 }) as string),
       ticker: this._id.substr(0, this._id.indexOf('-')),
       owner: (parseQueryResult(ret, { type: ContractQueryResultDataType.ADDRESS, index: 1 }) as string),
-      supply: (parseQueryResult(ret, { type: ContractQueryResultDataType.INT, index: 2, , regex: /(.+)/ }) as BigNum).toString(),
+      supply: (parseQueryResult(ret, { type: ContractQueryResultDataType.INT, index: 2, regex: /(.+)/ }) as BigNum).toString(),
       decimals: (parseQueryResult(ret, { type: ContractQueryResultDataType.INT, index: 4, regex: /NumDecimals\-(.+)/ }) as BigNum).toNumber(),
       paused: (parseQueryResult(ret, { type: ContractQueryResultDataType.BOOLEAN, index: 5, regex: /IsPaused\-(.+)/ }) as boolean),
       config: {

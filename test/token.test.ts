@@ -154,5 +154,87 @@ describe('ESDT tokens', () => {
       const info = await token.getInfo()
       expect(info.supply).to.eql('100000000000000000002')
     })
+
+    it.skip('it can burn tokens', async () => {
+      const rec = await token.burn('1')
+      await rec.promise()
+
+      await delay(15000)
+
+      await token.balanceOf(sender).should.eventually.eql('99999999999999999900')
+
+      const info = await token.getInfo()
+      expect(info.supply).to.eql('100000000000000000001')
+    })
+
+    it.skip('it can be paused and unpaused', async () => {
+      const rec = await token.pause()
+      await rec.promise()
+      await delay(15000)
+
+      await token.getInfo().should.eventually.have.property('paused').that.equals(true)
+
+      const rec2 = await token.unPause()
+      await rec2.promise()
+      await delay(15000)
+
+      await token.getInfo().should.eventually.have.property('paused').that.equals(false)
+    })
+
+    it.skip('it can freeze and unfreeze an address', async () => {
+      const rec = await token.freeze(WALLETS.eve.bech32)
+      await rec.promise()
+      await delay(5000)
+
+      await token.getInfo().should.eventually.have.property('paused').that.equals(true)
+
+      const rec2 = await token.unFreeze(WALLETS.eve.bech32)
+      await rec2.promise()
+      await delay(5000)
+
+      await token.getInfo().should.eventually.have.property('paused').that.equals(false)
+    })
+
+    it.skip('it can wipe frozen address balance', async () => {
+      await token.balanceOf(sender).should.eventually.not.eql('0')      
+
+      const rec = await token.freeze(WALLETS.eve.bech32)
+      await rec.promise()
+
+      const rec2 = await token.wipe(WALLETS.eve.bech32)
+      await rec2.promise()
+
+      await delay(15000)
+
+      await token.balanceOf(sender).should.eventually.eql('0')      
+    })
+
+    it('can upgrade its config', async () => {
+      const info = await token.getInfo()
+      expect(info.config.canPause).to.be.true
+
+      const rec = await token.updateConfig({
+        canBurn: true,
+        canChangeOwner: true,
+        canFreeze: true,
+        canMint: true,
+        canPause: false,
+        canUpgrade: true,
+        canWipe: true,
+      })
+      await rec.promise()
+      await delay(15000)
+
+      const info2 = await token.getInfo()
+      expect(info2.config.canPause).to.be.false
+    })
+
+    it('can change its owner', async () => {
+      const rec = await token.changeOwner(WALLETS.dan.bech32)
+      await rec.promise()
+      await delay(15000)
+
+      await token.getInfo().should.eventually.have.property('owner').which.equals(WALLETS.dan.bech32)
+    })
   })
 })

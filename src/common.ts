@@ -249,17 +249,13 @@ export interface SignedTransaction extends Transaction {
  */
 export interface TransactionReceipt {
   /**
-   * The final signed transaction.
-   */
-  signedTransaction: SignedTransaction,
-  /**
    * The transaction hash, for tracking purposes.
    */
   hash: string,
   /**
-   * Promise that resolves once transaction is complete
+   * On-chain transaction information.
    */
-  promise: () => Promise<TransactionOnChain>,
+  transactionOnChain?: TransactionOnChain,
 }
 
 
@@ -334,8 +330,10 @@ export interface Provider {
    * Broadcast a signed transaction to the network.
    *
    * @param signedTx The transaction.
+   * 
+   * @return {String} The transaction hash.
    */
-  sendSignedTransaction: (signedTx: SignedTransaction) => Promise<TransactionReceipt>,
+  sendSignedTransaction: (signedTx: SignedTransaction) => Promise<string>,
   /**
    * Wait for a broadcast transaction to finish executing.
    * 
@@ -344,7 +342,7 @@ export interface Provider {
    * @param txHash Hash of transaction to wait for.
    * @throws {TransactionFailedError} If transaction fails.
    */
-  waitForTransaction: (txHash: string) => Promise<TransactionOnChain>,
+  waitForTransaction: (txHash: string) => Promise<TransactionReceipt>,
   /**
    * Get information about a transaction.
    *

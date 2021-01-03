@@ -90,10 +90,7 @@ const {
   })
 
   // claim delegation rewards
-  const txReceipt = await c.invoke('claimRewards')
-
-  // wait for transaction to complete
-  await txReceipt.promise()
+  await c.invoke('claimRewards')
 })()
 ```
 
@@ -262,36 +259,21 @@ await signedTx = await wallet.signTransaction(tx, provider)
 A `SignedTransaction` can be broadcast to the network using a provider:
 
 ```js
-const txReceipt = await provider.sendSignedTransaction(signedTx)
+const hash = await provider.sendSignedTransaction(signedTx)
 ```
 
-Once a transaction has been broadcast to the network a `TransactionReceipt` is returned. This contains a Promise which can be used to wait until the transaction has finished executing:
+Once a transaction has been broadcast to the network a hash is returned. This can be used to wait until the transaction has finished executing:
 
 ```js
 try {
-  const txOnChain = await txReceipt.promise()
+  const receipt = await provider.waitForTransaction(hash)
 
-  console.log('Succeeded', txOnChain)
+  console.log('Succeeded', receipt.transactionOnChain)
 } catch (err) {
   console.error('Failed')
 
-  // The "transaction" contains the TransactionOnChain instance
-  console.log(err.transaction)
-}
-```
-
-Note that we can also use `provider.waitForTransaction()` for the same effect:
-
-```js
-try {
-  const txOnChain = await provider.waitForTransaction(txReceipt.hash)
-
-  console.log('Succeeded', txOnChain)
-} catch (err) {
-  console.error('Failed')
-
-  // The "transaction" contains the TransactionOnChain instance
-  console.log(err.transaction)
+  // The "receipt" contains the TransactionReceipt instance
+  console.log(err.receipt.transactionOnChain)
 }
 ```
 
@@ -355,20 +337,14 @@ const wallet = BasicWallet.generateRandom()
 
 const adderWasm = fs.readFileSync(path.join(__dirname, 'adder.wasm'))
 
-const { contract, promise } = await Contract.deploy(addderWasm, { upgradeable: true }, [ numberToHex(3) ], {
+const { contract } = await Contract.deploy(addderWasm, { upgradeable: true }, [ numberToHex(3) ], {
   provider,
   signer: wallet,
   sender: wallet.address(),
 })
 
-console.log(`Contract will be deployed at: ${contract.address}`)
-
-await promise()
-
-// At this point we can use the "contract" instance, knowing that the contract has been deployed successfully
+console.log(`Contract has been deployed at: ${contract.address}`)
 ```
-
-Although a `Contract` instance gets returned in the call to `Contract.deploy()` it is important to wait until the transaction has succeeded on chain (as shown in the example above). 
 
 Contract metadata specifies the following properties about a contract and can be changed via an upgrade:
 
@@ -501,13 +477,6 @@ await contract.invoke('method name', [ /* method arguments */], {
 })
 ```
 
-The Provider is used internally to monitor transaction progress:
-
-```js
-const txReceipt = await contract.invoke('method name', [ /* method arguments */])
-
-await txReceipt.promise() // same as calling: provider.waitForTransaction(txReceipt.hash)
-```
 
 ### Upgrading
 
@@ -523,9 +492,7 @@ const contract = await Contract.at('erdq1...', {
   sender: wallet.address(),
 })
 
-const txReceipt = await contract.upgrade(/*new code wasm */, /* new metadata */, /* constructor args */)
-
-await txReceipt.promise()
+await contract.upgrade(/*new code wasm */, /* new metadata */, /* constructor args */)
 ```
 
 ### Function arguments

@@ -1,21 +1,21 @@
-import { TransactionOnChain } from "./common"
+import { TransactionReceipt } from "./common"
 
 /**
  * Error indicating a failed transaction.
  */
 export class TransactionFailedError extends Error {
-  _txOnChain?: TransactionOnChain
+  _receipt?: TransactionReceipt
 
-  public constructor(msg: string, txOnChain?: TransactionOnChain) {
+  public constructor(msg: string, receipt?: TransactionReceipt) {
     super(msg)
-    this._txOnChain = txOnChain
+    this._receipt = receipt
     Error.captureStackTrace(this, TransactionFailedError)
   }
 
   /**
-   * Get on-chain transaction information (if set).
+   * Get transaction receipt (if set).
    */
-  public get transaction () {
-    return this._txOnChain
+  public get receipt () {
+    return this._receipt
   }
 }

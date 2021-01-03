@@ -242,8 +242,8 @@ export class Token extends TransactionOptionsBase {
     const tx = await builder.toTransaction()
 
     const signedTx = await opts.signer!.signTransaction(tx, opts.provider!)
-    
-    return await opts.provider!.sendSignedTransaction(signedTx)
+    const hash = await opts.provider!.sendSignedTransaction(signedTx)
+    return opts.provider!.waitForTransaction(hash)
   }
 
 

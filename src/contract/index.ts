@@ -300,12 +300,11 @@ export class Contract extends TransactionOptionsBase {
 
     // sign and send
     const signedTx = await signer!.signTransaction(tx, provider!)
-    const txReceipt = await provider!.sendSignedTransaction(signedTx)
-
-    await provider!.waitForTransaction(txReceipt.hash)
+    const hash = await provider!.sendSignedTransaction(signedTx)
+    const receipt = await provider!.waitForTransaction(hash)
 
     return {
-      ...txReceipt,
+      ...receipt,
       contract: new Contract(computedAddress, {
         ...options,
         gasLimit: undefined, // reset gas limit
@@ -446,8 +445,8 @@ export class Contract extends TransactionOptionsBase {
     const tx = await obj.toTransaction()
 
     const signedTx = await mergedOptions.signer!.signTransaction(tx, mergedOptions.provider!)
-
-    return await mergedOptions.provider!.sendSignedTransaction(signedTx)
+    const hash = await mergedOptions.provider!.sendSignedTransaction(signedTx)
+    return mergedOptions.provider!.waitForTransaction(hash)
   }
 
 
@@ -466,7 +465,7 @@ export class Contract extends TransactionOptionsBase {
     const tx = await obj.toTransaction()
 
     const signedTx = await mergedOptions.signer!.signTransaction(tx, mergedOptions.provider!)
-
-    return await mergedOptions.provider!.sendSignedTransaction(signedTx)
+    const hash = await mergedOptions.provider!.sendSignedTransaction(signedTx)
+    return mergedOptions.provider!.waitForTransaction(hash)
   }
 }

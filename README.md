@@ -50,9 +50,6 @@ import { Contract, ProxyProvider, BasicWallet } from 'elrondjs'
   await c.invoke('claimRewards', [], {
     gasLimit: 250000000
   })
-
-  // wait for transaction to complete
-  await txReceipt.promise()
 })()
 ```
 

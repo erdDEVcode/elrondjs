@@ -28,8 +28,6 @@ describe('contracts', () => {
         gasLimit: 15000000,
       }
     )
-
-    await receipt.promise()
   })
 
   it('can be deployed', async () => {
@@ -47,11 +45,9 @@ describe('contracts', () => {
   })
 
   it('can be invoked', async () => {
-    const rec = await receipt.contract.invoke('add', [numberToHex(5)], {
+    await receipt.contract.invoke('add', [numberToHex(5)], {
       gasLimit: 2000000
     })
-
-    await rec.promise()
 
     const sum2 = parseQueryResult(await receipt.contract.query('getSum'), {
       type: ContractQueryResultDataType.INT
@@ -76,17 +72,15 @@ describe('contracts', () => {
 
   describe('and upgrades', () => {
     it('are off by default', async () => {
-      const txReceipt = await receipt.contract.upgrade(adderWasm, {}, [ 
+      await receipt.contract.upgrade(adderWasm, {}, [ 
         numberToHex(3) 
       ], {
         gasLimit: 15000000
-      })
-
-      await txReceipt.promise().should.be.rejected
+      }).should.be.rejected
     })
 
     it('are on if deployed as upgradeable', async () => {
-      receipt = await Contract.deploy(
+      const { contract } = await Contract.deploy(
         adderWasm,
         {
           upgradeable: true,
@@ -100,17 +94,13 @@ describe('contracts', () => {
         }
       )
 
-      await receipt.promise()
-
-      const rec2 = await receipt.contract.upgrade(adderWasm, {
+      await contract.upgrade(adderWasm, {
         upgradeable: true,
       }, [
         numberToHex(3)
       ], {
         gasLimit: 15000000
       })
-
-      await rec2.promise()
     })
   })
 })

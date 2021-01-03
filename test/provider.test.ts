@@ -1,6 +1,7 @@
 import { WALLETS } from 'narya'
 
 import { BasicWallet, ProxyProvider, setDefaultGasPriceAndLimit } from '../dist/cjs'
+import BigNum from '../dist/cjs/bignum'
 
 import { expect, PROXY_ENDPOINT } from './utils'
 
@@ -27,7 +28,7 @@ describe('ProxyProvider', () => {
     const wallet1 = BasicWallet.fromJsonKeyFileString(JSON.stringify(WALLETS.alice), 'password')
     const wallet2 = BasicWallet.fromJsonKeyFileString(JSON.stringify(WALLETS.bob), 'password')
 
-    const startingBalance = (await proxy.getAddress(wallet2.address())).balance
+    const startingBalance = new BigNum((await proxy.getAddress(wallet2.address())).balance)
 
     const tx = await setDefaultGasPriceAndLimit({
       sender: wallet1.address(),
@@ -38,16 +39,17 @@ describe('ProxyProvider', () => {
     const signedTx = await wallet1.signTransaction(tx, proxy)
     expect(signedTx).to.exist
 
-    const receipt = await proxy.sendSignedTransaction(signedTx)
-    expect(receipt.hash).to.exist
+    const hash = await proxy.sendSignedTransaction(signedTx)
+    expect(hash).to.exist
 
-    await proxy.waitForTransaction(receipt.hash)
+    const receipt = await proxy.waitForTransaction(hash)
 
-    const endingBalance = (await proxy.getAddress(wallet2.address())).balance
+    const endingBalance = new BigNum((await proxy.getAddress(wallet2.address())).balance)
 
-    // TODO: check balance differences
+    expect(endingBalance.sub(startingBalance).toNumber()).to.eql(1)
     
-    const txOnChain = await proxy.getTransaction(receipt.hash)
-    expect(txOnChain.raw).to.exist
+    const txOnChain = receipt.transactionOnChain
+    expect(txOnChain).to.exist
+    expect(txOnChain!.raw).to.exist
   })
 })

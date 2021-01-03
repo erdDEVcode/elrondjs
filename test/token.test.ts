@@ -124,16 +124,14 @@ describe('ESDT tokens', () => {
       await token.balanceOf(sender).should.eventually.eql('100000000000000000000')
 
       const reciever = WALLETS.eve.bech32
-      const rec = await token.transfer(reciever, '100')
-      await rec.promise()
+      await token.transfer(reciever, '100')
 
       await token.balanceOf(reciever).should.eventually.eq('100')
       await token.balanceOf(sender).should.eventually.eql('99999999999999999900')
     })
 
     it('can mint more to the owner', async () => {
-      const rec = await token.mint('1')
-      await rec.promise()
+      await token.mint('1')
 
       await delay(15000)
 
@@ -144,8 +142,7 @@ describe('ESDT tokens', () => {
     })
 
     it('can mint more to any address', async () => {
-      const rec = await token.mint('1', WALLETS.dan.bech32)
-      await rec.promise()
+      await token.mint('1', WALLETS.dan.bech32)
       
       await delay(15000)
 
@@ -156,8 +153,7 @@ describe('ESDT tokens', () => {
     })
 
     it.skip('it can burn tokens', async () => {
-      const rec = await token.burn('1')
-      await rec.promise()
+      await token.burn('1')
 
       await delay(15000)
 
@@ -168,28 +164,24 @@ describe('ESDT tokens', () => {
     })
 
     it.skip('it can be paused and unpaused', async () => {
-      const rec = await token.pause()
-      await rec.promise()
+      await token.pause()
       await delay(15000)
 
       await token.getInfo().should.eventually.have.property('paused').that.equals(true)
 
-      const rec2 = await token.unPause()
-      await rec2.promise()
+      await token.unPause()
       await delay(15000)
 
       await token.getInfo().should.eventually.have.property('paused').that.equals(false)
     })
 
     it.skip('it can freeze and unfreeze an address', async () => {
-      const rec = await token.freeze(WALLETS.eve.bech32)
-      await rec.promise()
+      await token.freeze(WALLETS.eve.bech32)
       await delay(5000)
 
       await token.getInfo().should.eventually.have.property('paused').that.equals(true)
 
-      const rec2 = await token.unFreeze(WALLETS.eve.bech32)
-      await rec2.promise()
+      await token.unFreeze(WALLETS.eve.bech32)
       await delay(5000)
 
       await token.getInfo().should.eventually.have.property('paused').that.equals(false)
@@ -198,11 +190,8 @@ describe('ESDT tokens', () => {
     it.skip('it can wipe frozen address balance', async () => {
       await token.balanceOf(sender).should.eventually.not.eql('0')      
 
-      const rec = await token.freeze(WALLETS.eve.bech32)
-      await rec.promise()
-
-      const rec2 = await token.wipe(WALLETS.eve.bech32)
-      await rec2.promise()
+      await token.freeze(WALLETS.eve.bech32)
+      await token.wipe(WALLETS.eve.bech32)
 
       await delay(15000)
 
@@ -213,7 +202,7 @@ describe('ESDT tokens', () => {
       const info = await token.getInfo()
       expect(info.config.canPause).to.be.true
 
-      const rec = await token.updateConfig({
+      await token.updateConfig({
         canBurn: true,
         canChangeOwner: true,
         canFreeze: true,
@@ -222,7 +211,6 @@ describe('ESDT tokens', () => {
         canUpgrade: true,
         canWipe: true,
       })
-      await rec.promise()
       await delay(15000)
 
       const info2 = await token.getInfo()
@@ -230,8 +218,7 @@ describe('ESDT tokens', () => {
     })
 
     it('can change its owner', async () => {
-      const rec = await token.changeOwner(WALLETS.dan.bech32)
-      await rec.promise()
+      await token.changeOwner(WALLETS.dan.bech32)
       await delay(15000)
 
       await token.getInfo().should.eventually.have.property('owner').which.equals(WALLETS.dan.bech32)

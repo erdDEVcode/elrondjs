@@ -154,7 +154,7 @@ export class ProxyProvider extends Api implements Provider {
     return data
   }
 
-  public async sendSignedTransaction(signedTx: SignedTransaction): Promise<TransactionReceipt> {
+  public async sendSignedTransaction(signedTx: SignedTransaction): Promise<string> {
     const ret = await this._call(`/transaction/send`, {
       method: 'POST',
       headers: {
@@ -165,14 +165,10 @@ export class ProxyProvider extends Api implements Provider {
 
     const { txHash: hash } = this._parseResponse(ret, 'Error sending transaction')
 
-    return { 
-      signedTransaction: signedTx, 
-      hash,
-      promise: () => this.waitForTransaction(hash) 
-    }
+    return hash
   }
 
-  public async waitForTransaction(txHash: string): Promise<TransactionOnChain> {
+  public async waitForTransaction(txHash: string): Promise<TransactionReceipt> {
     return new TransactionTracker(this, txHash).waitForCompletion()
   }
 

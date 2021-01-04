@@ -132,7 +132,6 @@ describe('ESDT tokens', () => {
 
     it('can mint more to the owner', async () => {
       await token.mint('1')
-
       await delay(15000)
 
       await token.balanceOf(sender).should.eventually.eql('99999999999999999901')
@@ -143,7 +142,6 @@ describe('ESDT tokens', () => {
 
     it('can mint more to any address', async () => {
       await token.mint('1', WALLETS.dan.bech32)
-      
       await delay(15000)
 
       await token.balanceOf(WALLETS.dan.bech32).should.eventually.eql('1')
@@ -152,9 +150,8 @@ describe('ESDT tokens', () => {
       expect(info.supply).to.eql('100000000000000000002')
     })
 
-    it.skip('it can burn tokens', async () => {
+    it.skip('it can burn tokens for sender', async () => {
       await token.burn('1')
-
       await delay(15000)
 
       await token.balanceOf(sender).should.eventually.eql('99999999999999999900')
@@ -163,39 +160,34 @@ describe('ESDT tokens', () => {
       expect(info.supply).to.eql('100000000000000000001')
     })
 
-    it.skip('it can be paused and unpaused', async () => {
+    it('it can be paused and unpaused', async () => {
       await token.pause()
-      await delay(15000)
+      await delay(5000)
 
       await token.getInfo().should.eventually.have.property('paused').that.equals(true)
 
       await token.unPause()
-      await delay(15000)
+      await delay(5000)
 
       await token.getInfo().should.eventually.have.property('paused').that.equals(false)
     })
 
-    it.skip('it can freeze and unfreeze an address', async () => {
+    it('it can freeze and unfreeze an address', async () => {
       await token.freeze(WALLETS.eve.bech32)
       await delay(5000)
-
-      await token.getInfo().should.eventually.have.property('paused').that.equals(true)
-
       await token.unFreeze(WALLETS.eve.bech32)
       await delay(5000)
-
-      await token.getInfo().should.eventually.have.property('paused').that.equals(false)
     })
 
-    it.skip('it can wipe frozen address balance', async () => {
-      await token.balanceOf(sender).should.eventually.not.eql('0')      
+    it('it can wipe frozen address balance', async () => {
+      await token.balanceOf(WALLETS.eve.bech32).should.eventually.not.eql('0')      
 
       await token.freeze(WALLETS.eve.bech32)
+      await delay(15000)
       await token.wipe(WALLETS.eve.bech32)
-
       await delay(15000)
 
-      await token.balanceOf(sender).should.eventually.eql('0')      
+      await token.balanceOf(WALLETS.eve.bech32).should.eventually.eql('0')      
     })
 
     it('can upgrade its config', async () => {

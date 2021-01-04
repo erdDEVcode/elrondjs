@@ -271,11 +271,11 @@ export class Token extends TransactionOptionsBase {
    * @param options Transaction options to override the default ones with.
    */
   public async burn(amount: string, options?: TransactionOptions): Promise<TransactionReceipt> {
-    return await this._contractInstance.invoke('ESDTburn', [
+    return await this._contractInstance.invoke('ESDTBurn', [
       stringToHex(this._id),
       numberToHex(amount)
     ], {
-      gasLimit: TOKEN_MGMT_STANDARD_GAS_COST,
+      gasLimit: 2500000,
       ...options
     })
   }

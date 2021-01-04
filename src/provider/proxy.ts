@@ -25,6 +25,7 @@ export const parseRawTransaction = (tx: any): TransactionOnChain => {
     case 'executed':
       status = TransactionStatus.SUCCESS
       break
+    case 'invalid':
     case 'fail':
     case 'not-executed':
       status = TransactionStatus.FAILURE
@@ -56,7 +57,7 @@ export const parseRawTransaction = (tx: any): TransactionOnChain => {
 
 
 /**
- * A [[Provider]] which speaks to an Elrond Proxy endpoint.
+ * A `Provider` which speaks to an Elrond Proxy endpoint.
  */
 export class ProxyProvider extends Api implements Provider {
   /**

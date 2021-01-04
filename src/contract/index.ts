@@ -1,6 +1,6 @@
 import { Buffer } from 'buffer'
-import BigNum from '../bignum'
 
+import { BigNum } from '../bignum'
 import { 
   ContractQueryResult, 
   ContractQueryResultParseOptions, 
@@ -11,7 +11,7 @@ import {
   ContractMetadata,
 } from '../common'
 
-import { TransactionOptionsBase, joinDataArguments, TransactionBuilder, verifyTransactionOptions, ADDRESS_ZERO_BECH32, ARWEN_VIRTUAL_MACHINE, addressToHexString, keccak, hexStringToAddress, contractMetadataToString } from '../lib'
+import { TransactionOptionsBase, joinDataArguments, TransactionBuilder, verifyTransactionOptions, ADDRESS_ZERO_BECH32, ARWEN_VIRTUAL_MACHINE, addressToHexString, keccak, hexStringToAddress, contractMetadataToString, stringToHex, numberToHex } from '../lib'
 
 
 /**
@@ -212,7 +212,22 @@ class ContractInvocationBuilder extends TransactionBuilder {
   }
 
   public getTransactionDataString(): string {
-    return joinDataArguments(this._func, ...this._args)
+    let args = [this._func, ...this._args]
+
+    // check if we should transfer a token along with this call!
+    if (this._options) {
+      const { esdtId, esdtValue } = this._options
+
+      if (esdtId && esdtValue) {
+        args = [
+          'ESDTTransfer',
+          stringToHex(esdtId),
+          numberToHex(esdtValue), 
+        ].concat(args)
+      }
+    }
+
+    return joinDataArguments(...args)
   }
 
   public getReceiverAddress(): string {

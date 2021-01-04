@@ -73,7 +73,7 @@ export interface BigNumConfig {
  * 
  * All the arithmetic methods are immutable, i.e. they return a new `BigNum` instance, leaving the original inputs unchanged.
  */
-export default class BigNum {
+export class BigNum {
   _n: Decimal
   _scale: BigNumScale
   _config: BigNumConfig

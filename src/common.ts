@@ -394,6 +394,18 @@ export interface TransactionOptions {
    */
   value?: string,
   /**
+   * Id of ESDT token to transfer.
+   * 
+   * Only applies to contract invocations.
+   */
+  esdtId?: string,
+  /**
+   * No. of of ESDT tokens to transfer.
+   * 
+   * Only applies to contract invocations.
+   */
+  esdtValue?: string,
+  /**
    * Gas price.
    * 
    * Denominated in the smallest eGLD unit (10^18).

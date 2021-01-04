@@ -1,8 +1,8 @@
 import Elrond from '@elrondnetwork/elrond-core-js'
 import { Buffer } from 'buffer'
 import createKeccakHash from 'keccak'
-import BigNum from '../bignum'
 
+import { BigNum } from '../bignum'
 import { ContractMetadata } from '../common'
 
 /**

@@ -1,7 +1,6 @@
 import { WALLETS } from 'narya'
 
-import { BasicWallet, ProxyProvider, setDefaultGasPriceAndLimit } from '../dist/cjs'
-import BigNum from '../dist/cjs/bignum'
+import { BigNum, BasicWallet, ProxyProvider, setDefaultGasPriceAndLimit } from '../src'
 
 import { expect, PROXY_ENDPOINT } from './utils'
 

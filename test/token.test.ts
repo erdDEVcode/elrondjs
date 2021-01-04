@@ -2,7 +2,7 @@ import { WALLETS } from 'narya'
 import delay from 'delay'
 
 import { expect, PROXY_ENDPOINT } from './utils'
-import { BasicWallet, ProxyProvider, Token } from '../dist/cjs'
+import { BasicWallet, ProxyProvider, Token } from '../src'
 
 describe('ESDT tokens', () => {
   const provider = new ProxyProvider(PROXY_ENDPOINT)

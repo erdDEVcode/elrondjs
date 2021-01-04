@@ -1,6 +1,6 @@
 import { WALLETS } from 'narya'
 
-import { BasicWallet, ProxyProvider } from '../dist/cjs'
+import { BasicWallet, ProxyProvider } from '../src'
 import { expect, PROXY_ENDPOINT } from './utils'
 
 const MNEMONIC = 'fringe dry little minor note hundred lottery garment announce space throw captain seven slim common piece blame battle void pistol diagram melody phone mother'

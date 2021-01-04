@@ -3,8 +3,8 @@ import fs from 'fs'
 import { WALLETS } from 'narya'
 
 import { expect, PROXY_ENDPOINT } from './utils'
-import { BasicWallet, ProxyProvider, Contract, stringToHex, parseQueryResult, ContractDeploymentTransactionReceipt, ContractQueryResultDataType, numberToHex } from '../dist/cjs'
-import BigNum from '../dist/cjs/bignum'
+import { BigNum, BasicWallet, ProxyProvider, Contract, parseQueryResult, ContractDeploymentTransactionReceipt, ContractQueryResultDataType, numberToHex, Token } from '../src'
+import delay from 'delay'
 
 
 describe('contracts', () => {
@@ -47,6 +47,44 @@ describe('contracts', () => {
   it('can be invoked', async () => {
     await receipt.contract.invoke('add', [numberToHex(5)], {
       gasLimit: 2000000
+    })
+
+    const sum2 = parseQueryResult(await receipt.contract.query('getSum'), {
+      type: ContractQueryResultDataType.INT
+    }) as BigNum
+
+    expect(sum2.toNumber()).to.equal(8)
+  })
+
+  it.skip('can be invoked with tokens', async () => {
+    const token = await Token.new(
+      'RamToken',
+      'RAM',
+      '10000',
+      18,
+      {
+        canBurn: false,
+        canChangeOwner: false,
+        canFreeze: false,
+        canMint: false,
+        canPause: false,
+        canUpgrade: false,
+        canWipe: false,
+      },
+      {
+        provider,
+        signer,
+        sender,
+      }
+    )
+
+    await delay(15000)
+    await token.balanceOf(sender).should.eventually.eql('10000')
+
+    await receipt.contract.invoke('add', [numberToHex(5)], {
+      gasLimit: 2000000,
+      esdtId: token.id,
+      esdtValue: '1',
     })
 
     const sum2 = parseQueryResult(await receipt.contract.query('getSum'), {

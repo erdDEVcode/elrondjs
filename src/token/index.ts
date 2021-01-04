@@ -8,9 +8,8 @@ import {
 
 
 import { stringToHex, numberToHex, addressToHexString, ARGS_DELIMITER, joinDataArguments, TransactionOptionsBase, TransactionBuilder, convertMapToDataArguments, hexStringToAddress } from '../lib'
-
 import { Contract, parseQueryResult } from '../contract'
-import BigNum from '../bignum'
+import { BigNum } from '../bignum'
 
 
 

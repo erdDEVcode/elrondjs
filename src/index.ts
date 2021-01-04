@@ -1,5 +1,4 @@
 export * from './lib'
-export * from './bignum'
 export * from './common'
 export * from './provider'
 export * from './wallet'

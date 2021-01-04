@@ -1,6 +1,7 @@
 import { WALLETS } from 'narya'
+import { BigVal } from 'bigval'
 
-import { BigNum, BasicWallet, ProxyProvider, setDefaultGasPriceAndLimit } from '../src'
+import { BasicWallet, ProxyProvider, setDefaultGasPriceAndLimit } from '../src'
 
 import { expect, PROXY_ENDPOINT } from './utils'
 
@@ -27,7 +28,7 @@ describe('ProxyProvider', () => {
     const wallet1 = BasicWallet.fromJsonKeyFileString(JSON.stringify(WALLETS.alice), 'password')
     const wallet2 = BasicWallet.fromJsonKeyFileString(JSON.stringify(WALLETS.bob), 'password')
 
-    const startingBalance = new BigNum((await proxy.getAddress(wallet2.address())).balance)
+    const startingBalance = new BigVal((await proxy.getAddress(wallet2.address())).balance)
 
     const tx = await setDefaultGasPriceAndLimit({
       sender: wallet1.address(),
@@ -43,7 +44,7 @@ describe('ProxyProvider', () => {
 
     const receipt = await proxy.waitForTransaction(hash)
 
-    const endingBalance = new BigNum((await proxy.getAddress(wallet2.address())).balance)
+    const endingBalance = new BigVal((await proxy.getAddress(wallet2.address())).balance)
 
     expect(endingBalance.sub(startingBalance).toNumber()).to.eql(1)
     

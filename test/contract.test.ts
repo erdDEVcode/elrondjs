@@ -1,9 +1,10 @@
 import path from 'path'
 import fs from 'fs'
 import { WALLETS } from 'narya'
+import { BigVal } from 'bigval'
 
 import { expect, PROXY_ENDPOINT } from './utils'
-import { BigNum, BasicWallet, ProxyProvider, Contract, parseQueryResult, ContractDeploymentTransactionReceipt, ContractQueryResultDataType, numberToHex, Token } from '../src'
+import { BasicWallet, ProxyProvider, Contract, parseQueryResult, ContractDeploymentTransactionReceipt, ContractQueryResultDataType, numberToHex, Token } from '../src'
 import delay from 'delay'
 
 
@@ -39,9 +40,9 @@ describe('contracts', () => {
   it('can be queried', async () => {
     const sum = parseQueryResult(await receipt.contract.query('getSum'), {
       type: ContractQueryResultDataType.INT
-    }) as BigNum
+    }) as string
 
-    expect(sum.toNumber()).to.equal(3)
+    expect(sum).to.equal('3')
   })
 
   it('can be invoked', async () => {
@@ -51,9 +52,9 @@ describe('contracts', () => {
 
     const sum2 = parseQueryResult(await receipt.contract.query('getSum'), {
       type: ContractQueryResultDataType.INT
-    }) as BigNum
+    })
 
-    expect(sum2.toNumber()).to.equal(8)
+    expect(sum2).to.equal('8')
   })
 
   it.skip('can be invoked with tokens', async () => {
@@ -89,9 +90,9 @@ describe('contracts', () => {
 
     const sum2 = parseQueryResult(await receipt.contract.query('getSum'), {
       type: ContractQueryResultDataType.INT
-    }) as BigNum
+    })
 
-    expect(sum2.toNumber()).to.equal(8)
+    expect(sum2).to.equal('8')
   })
 
   it('can be found', async () => {
@@ -103,9 +104,9 @@ describe('contracts', () => {
 
     const sum = parseQueryResult(await receipt.contract.query('getSum'), {
       type: ContractQueryResultDataType.INT
-    }) as BigNum
+    })
 
-    expect(sum.toNumber()).to.equal(8)
+    expect(sum).to.equal('8')
   })
 
   describe('and upgrades', () => {

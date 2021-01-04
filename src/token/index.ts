@@ -1,3 +1,5 @@
+import { BigVal } from 'bigval'
+
 import {
   TransactionOptions,
   TokenConfig,
@@ -9,7 +11,6 @@ import {
 
 import { stringToHex, numberToHex, addressToHexString, ARGS_DELIMITER, joinDataArguments, TransactionOptionsBase, TransactionBuilder, convertMapToDataArguments, hexStringToAddress } from '../lib'
 import { Contract, parseQueryResult } from '../contract'
-import { BigNum } from '../bignum'
 
 
 
@@ -191,8 +192,8 @@ export class Token extends TransactionOptionsBase {
       name: (parseQueryResult(ret, { type: ContractQueryResultDataType.STRING, index: 0 }) as string),
       ticker: this._id.substr(0, this._id.indexOf('-')),
       owner: (parseQueryResult(ret, { type: ContractQueryResultDataType.ADDRESS, index: 1 }) as string),
-      supply: (parseQueryResult(ret, { type: ContractQueryResultDataType.INT, index: 2, regex: /(.+)/ }) as BigNum).toString(),
-      decimals: (parseQueryResult(ret, { type: ContractQueryResultDataType.INT, index: 4, regex: /NumDecimals\-(.+)/ }) as BigNum).toNumber(),
+      supply: (parseQueryResult(ret, { type: ContractQueryResultDataType.INT, index: 2, regex: /(.+)/ }) as string),
+      decimals: new BigVal(parseQueryResult(ret, { type: ContractQueryResultDataType.INT, index: 4, regex: /NumDecimals\-(.+)/ }) as string).toNumber(),
       paused: (parseQueryResult(ret, { type: ContractQueryResultDataType.BOOLEAN, index: 5, regex: /IsPaused\-(.+)/ }) as boolean),
       config: {
         canUpgrade: (parseQueryResult(ret, { type: ContractQueryResultDataType.BOOLEAN, index: 6, regex: /CanUpgrade\-(.+)/ }) as boolean),

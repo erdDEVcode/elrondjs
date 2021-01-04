@@ -1,6 +1,6 @@
 import { Buffer } from 'buffer'
+import { BigVal } from 'bigval'
 
-import { BigNum } from '../bignum'
 import { 
   ContractQueryResult, 
   ContractQueryResultParseOptions, 
@@ -43,7 +43,7 @@ export interface ContractDeploymentTransactionReceipt extends TransactionReceipt
  * @param result The query result.
  * @param options Parsing options.
  */
-export const parseQueryResult = (result: ContractQueryResult, options: ContractQueryResultParseOptions): (string | BigNum | boolean) => {
+export const parseQueryResult = (result: ContractQueryResult, options: ContractQueryResultParseOptions): (string | BigVal | boolean) => {
   options.index = options.index || 0
 
   const inputVal = result.returnData[options.index]
@@ -62,9 +62,9 @@ export const parseQueryResult = (result: ContractQueryResult, options: ContractQ
       }
       case ContractQueryResultDataType.INT: {
         if (!parsedVal) {
-          return new BigNum(0)
+          return new BigVal(0).toString()
         } else {
-          return new BigNum(parsedVal)
+          return new BigVal(parsedVal).toString()
         }
       }
       case ContractQueryResultDataType.ADDRESS: {
@@ -92,9 +92,9 @@ export const parseQueryResult = (result: ContractQueryResult, options: ContractQ
       }
       case ContractQueryResultDataType.INT: {
         if (!inputVal) {
-          return new BigNum(0)
+          return new BigVal(0).toString()
         } else {
-          return new BigNum(queryResultValueToHex(inputVal))
+          return new BigVal(queryResultValueToHex(inputVal)).toString()
         }
       }
       case ContractQueryResultDataType.ADDRESS: {

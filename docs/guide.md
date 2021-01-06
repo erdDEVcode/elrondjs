@@ -438,7 +438,7 @@ types are:
 * `STRING` - strings
 * `ADDRESS` - bech32 address strings
 
-## Invoking via transaction
+### Invoking via transaction
 
 If we wish to send a transaction to a contract (i.e. write data) we need to pass in a `Signer` and set the `sender` address for transactions:
 

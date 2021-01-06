@@ -1,3 +1,15 @@
+# [2.0.0](https://github.com/erdDEVcode/elrondjs/compare/v1.12.1...v2.0.0) (2021-01-06)
+
+
+### Features
+
+* updated license ([137d4fd](https://github.com/erdDEVcode/elrondjs/commit/137d4fd2b64d2174ef5b2e61acb7304a31256677))
+
+
+### BREAKING CHANGES
+
+* new invocation format
+
 ## [1.12.1](https://github.com/erdDEVcode/elrondjs/compare/v1.12.0...v1.12.1) (2020-12-30)
 
 # [1.12.0](https://github.com/erdDEVcode/elrondjs/compare/v1.11.1...v1.12.0) (2020-12-29)

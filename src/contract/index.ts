@@ -94,7 +94,7 @@ export const parseQueryResult = (result: ContractQueryResult, options: ContractQ
         if (!inputVal) {
           return new BigVal(0).toString()
         } else {
-          return new BigVal(queryResultValueToHex(inputVal)).toString()
+          return new BigVal(`0x${queryResultValueToHex(inputVal)}`).toString()
         }
       }
       case ContractQueryResultDataType.ADDRESS: {
@@ -212,19 +212,26 @@ class ContractInvocationBuilder extends TransactionBuilder {
   }
 
   public getTransactionDataString(): string {
-    let args = [this._func, ...this._args]
+    let args: string[] = []
 
     // check if we should transfer a token along with this call!
     if (this._options) {
-      const { esdtId, esdtValue } = this._options
+      const { esdt } = this._options
 
-      if (esdtId && esdtValue) {
+      if (esdt) {
         args = [
           'ESDTTransfer',
-          stringToHex(esdtId),
-          numberToHex(esdtValue), 
-        ].concat(args)
+          stringToHex(esdt.id),
+          numberToHex(esdt.value), 
+          stringToHex(this._func),
+          ...this._args
+        ]
       }
+    }
+
+    // if not yet set then it's just a standard function call
+    if (!args.length) {
+      args = [this._func, ...this._args]
     }
 
     return joinDataArguments(...args)

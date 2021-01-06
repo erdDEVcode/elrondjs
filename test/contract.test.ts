@@ -1,7 +1,6 @@
 import path from 'path'
 import fs from 'fs'
 import { WALLETS } from 'narya'
-import { BigVal } from 'bigval'
 
 import { expect, PROXY_ENDPOINT } from './utils'
 import { BasicWallet, ProxyProvider, Contract, parseQueryResult, ContractDeploymentTransactionReceipt, ContractQueryResultDataType, numberToHex, Token } from '../src'
@@ -17,10 +16,11 @@ describe('contracts', () => {
 
   let receipt: ContractDeploymentTransactionReceipt
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     receipt = await Contract.deploy(
       adderWasm,
-      {},
+      {
+      },
       [numberToHex(3)],
       {
         provider,
@@ -57,7 +57,7 @@ describe('contracts', () => {
     expect(sum2).to.equal('8')
   })
 
-  it.skip('can be invoked with tokens', async () => {
+  it('can be invoked with tokens', async () => {
     const token = await Token.new(
       'RamToken',
       'RAM',
@@ -83,9 +83,11 @@ describe('contracts', () => {
     await token.balanceOf(sender).should.eventually.eql('10000')
 
     await receipt.contract.invoke('add', [numberToHex(5)], {
-      gasLimit: 2000000,
-      esdtId: token.id,
-      esdtValue: '1',
+      gasLimit: 2500000,
+      esdt: {
+        id: token.id,
+        value: '1',
+      }
     })
 
     const sum2 = parseQueryResult(await receipt.contract.query('getSum'), {
@@ -93,6 +95,9 @@ describe('contracts', () => {
     })
 
     expect(sum2).to.equal('8')
+
+    // check contract token balance
+    await token.balanceOf(receipt.contract.address).should.eventually.eql('1')
   })
 
   it('can be found', async () => {
@@ -106,7 +111,7 @@ describe('contracts', () => {
       type: ContractQueryResultDataType.INT
     })
 
-    expect(sum).to.equal('8')
+    expect(sum).to.equal('3')
   })
 
   describe('and upgrades', () => {

@@ -379,6 +379,8 @@ export interface Wallet extends Signer {
 
 
 
+
+
 /**
  * Options for interacting sending transactions.
  */
@@ -394,17 +396,11 @@ export interface TransactionOptions {
    */
   value?: string,
   /**
-   * Id of ESDT token to transfer.
+   * ESDT token to transfer.
    * 
    * Only applies to contract invocations.
    */
-  esdtId?: string,
-  /**
-   * No. of of ESDT tokens to transfer.
-   * 
-   * Only applies to contract invocations.
-   */
-  esdtValue?: string,
+  esdt?: TokenAmount,
   /**
    * Gas price.
    * 
@@ -431,6 +427,19 @@ export interface TransactionOptions {
   signer?: Signer,
 }
 
+/**
+ * ESDT token balance/amount representation.
+ */
+export interface TokenAmount {
+  /**
+   * Token id.
+   */
+  id: string,
+  /**
+   * Amount/value.
+   */
+  value: string,
+}
 
 
 /**

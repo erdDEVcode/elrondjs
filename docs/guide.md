@@ -479,6 +479,29 @@ await contract.invoke('method name', [ /* method arguments */], {
 })
 ```
 
+### Transferring eGLD and tokens
+
+When invoking a contract method it is possible to transfer both eGLD and ESDT tokens as part of the call. The `TransactionOptions` parameter has the following properties which can be set:
+
+* `value` (`string`) - eGLD amount to send (denominated in smallest unit).
+* `esdt` (`TokenAmount`) - ESDT token amount to send.
+
+For example:
+
+```js
+const c = Contract.at('erd1qq....', { provider })
+
+const t = await Token.issue('MyToken', 'MYTOKEN', '1000', 18, ...)
+
+await c.invoke('doSomething', [], {
+  value: '1000000000000000000', // 1 eGLD
+  esdt: {
+    id: t.id,
+    value: '999'
+  }
+})
+```
+
 
 ### Upgrading
 
@@ -516,6 +539,7 @@ const ret = await c.query('getValues', [
   numberToHex(5)
 ])
 ```
+
 
 ## Tokens
 

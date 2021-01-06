@@ -9,6 +9,7 @@ import {
   TransactionReceipt,
   TransactionOnChain, 
   TransactionStatus,
+  TokenData,
 } from '../common'
 
 /**
@@ -24,6 +25,7 @@ export const parseRawTransaction = (tx: any): TransactionOnChain => {
     case 'executed':
       status = TransactionStatus.SUCCESS
       break
+    case 'invalid':
     case 'fail':
     case 'not-executed':
       status = TransactionStatus.FAILURE
@@ -55,7 +57,7 @@ export const parseRawTransaction = (tx: any): TransactionOnChain => {
 
 
 /**
- * A [[Provider]] which speaks to an Elrond Proxy endpoint.
+ * A `Provider` which speaks to an Elrond Proxy endpoint.
  */
 export class ProxyProvider extends Api implements Provider {
   /**
@@ -66,6 +68,18 @@ export class ProxyProvider extends Api implements Provider {
    */
   constructor(api: string, options?: ApiOptions) {
     super(api, options)
+  }
+
+  /**
+   * Sanitize balance value returned from the Elrond proxy.
+   * @param balance 
+   */
+  protected _sanitizeBalance (balance: string): string {
+    if (balance === '<nil>') {
+      return '0'
+    } else {
+      return balance
+    }
   }
 
   /**
@@ -106,7 +120,21 @@ export class ProxyProvider extends Api implements Provider {
 
     const { account } = this._parseResponse(ret, 'Error fetching address info')
 
-    return account
+    return {
+      ...account,
+      balance: this._sanitizeBalance(account.balance),
+    }
+  }
+
+  public async getESDTData(address: string, token: string): Promise<TokenData> {
+    const ret = await this._call(`/address/${address}/esdt/${token}`)
+
+    const { tokenData } = this._parseResponse(ret, 'Error fetching ESDT info')
+
+    return {
+      id: token,
+      balance: this._sanitizeBalance(tokenData.balance),
+    }
   }
 
   public async queryContract(params: ContractQueryParams): Promise<ContractQueryResult> {
@@ -127,7 +155,7 @@ export class ProxyProvider extends Api implements Provider {
     return data
   }
 
-  public async sendSignedTransaction(signedTx: SignedTransaction): Promise<TransactionReceipt> {
+  public async sendSignedTransaction(signedTx: SignedTransaction): Promise<string> {
     const ret = await this._call(`/transaction/send`, {
       method: 'POST',
       headers: {
@@ -138,10 +166,10 @@ export class ProxyProvider extends Api implements Provider {
 
     const { txHash: hash } = this._parseResponse(ret, 'Error sending transaction')
 
-    return { signedTransaction: signedTx, hash }
+    return hash
   }
 
-  public async waitForTransaction(txHash: string): Promise<TransactionOnChain> {
+  public async waitForTransaction(txHash: string): Promise<TransactionReceipt> {
     return new TransactionTracker(this, txHash).waitForCompletion()
   }
 

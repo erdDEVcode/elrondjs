@@ -1,6 +1,6 @@
-import { Provider, Transaction, TransactionOnChain, TransactionOptions, TransactionStatus } from "../common"
+import { Provider, Transaction, TransactionOnChain, TransactionOptions, TransactionReceipt, TransactionStatus } from "../common"
 import { TransactionFailedError } from "../errors"
-import { ARGS_DELIMITER } from "./utils"
+import { ARGS_DELIMITER, stringToHex } from "./utils"
 
 
 
@@ -30,22 +30,28 @@ export class TransactionTracker {
    * 
    * @throws {TransactionFailedError} If transaction fails or transaction tracking fails for whatever reason.
    */
-  async waitForCompletion(): Promise<TransactionOnChain> {
+  async waitForCompletion(): Promise<TransactionReceipt> {
+    const receipt: TransactionReceipt = {
+      hash: this._txHash
+    }
+
     return new Promise((resolve, reject) => {
       const _wait = () => {
         setTimeout(() => {
           this._provider.getTransaction(this._txHash)
             .then(txOnChain => {
+              receipt.transactionOnChain = txOnChain
+
               switch (txOnChain.status) {
                 case TransactionStatus.FAILURE:
-                  let errMsg = `Transaction failed: ${this._txHash}`
+                  let errMsg = `Transaction failed: ${receipt.hash}`
                   if (txOnChain.smartContractErrors.length) {
                     errMsg = `Smart contract error:\n\n${txOnChain.smartContractErrors.join("\n")}`
                   } 
-                  reject(new TransactionFailedError(errMsg, txOnChain))
+                  reject(new TransactionFailedError(errMsg, receipt))
                   break
                 case TransactionStatus.SUCCESS:
-                  resolve(txOnChain)
+                  resolve(receipt)
                   break
                 default:
                   _wait()
@@ -198,6 +204,20 @@ export const verifyTransactionOptions = (options?: TransactionOptions, ...fields
       }
     })
   }
+}
+
+
+
+/**
+ * Generate transaction data arguments from given key-value map.
+ * @param keyValueMap The key-value map.
+ */
+export const convertMapToDataArguments = (keyValueMap: object): string[] => {
+  return Object.keys(keyValueMap).reduce((m, v) => {
+    m.push(stringToHex(v))
+    m.push(stringToHex((keyValueMap as any)[v] ? 'true' : 'false'))
+    return m
+  }, [] as string[])
 }
 
 

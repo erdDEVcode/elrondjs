@@ -90,10 +90,7 @@ const {
   })
 
   // claim delegation rewards
-  const tx = await c.invoke('claimRewards')
-
-  // wait for transaction to complete
-  await proxy.waitForTransaction(tx.hash)
+  await c.invoke('claimRewards')
 })()
 ```
 
@@ -118,8 +115,8 @@ Providers must implement the following API:
 * `getNetworkConfig: () => Promise<NetworkConfig>` - get network information
 * `getAddress: (address: string) => Promise<Address>` - get information about an address
 * `queryContract: (params: ContractQueryParams) => Promise<ContractQueryResult>` - read from a contract
-* `sendSignedTransaction: (signedTx: SignedTransaction) => Promise<TransactionReceipt>` - broadcast a transaction to the network
-* `waitForTransaction: (txHash: string) => Promise<TransactionOnChain>` - wait for transaction to finish executing on the network
+* `sendSignedTransaction: (signedTx: SignedTransaction) => Promise<string>` - broadcast a transaction to the network
+* `waitForTransaction: (txHash: string) => Promise<TransactionReceipt>` - wait for transaction to finish executing on the network
 * `getTransaction: (txHash: string) => Promise<TransactionOnChain>` - get transaction information
 
 ### Get network config
@@ -262,23 +259,24 @@ await signedTx = await wallet.signTransaction(tx, provider)
 A `SignedTransaction` can be broadcast to the network using a provider:
 
 ```js
-const txReceipt = await provider.sendSignedTransaction(signedTx)
+const hash = await provider.sendSignedTransaction(signedTx)
 ```
 
-Once a transaction has been broadcast to the network a `TransactionReceipt` is returned. This contains the transaction hash which can be used to wait until the transaction has finished executing:
+Once a transaction has been broadcast to the network a hash is returned. This can be used to wait until the transaction has finished executing:
 
 ```js
 try {
-  const txOnChain = await provider.waitForTransaction(txReceipt.hash)
+  const receipt = await provider.waitForTransaction(hash)
 
-  console.log('Succeeded', txOnChain)
+  console.log('Succeeded', receipt.transactionOnChain)
 } catch (err) {
   console.error('Failed')
 
-  // The "transaction" contains the TransactionOnChain instance
-  console.log(err.transaction)
+  // The "receipt" contains the TransactionReceipt instance
+  console.log(err.receipt.transactionOnChain)
 }
 ```
+
 
 ### Auto-calculate gas 
 
@@ -339,20 +337,14 @@ const wallet = BasicWallet.generateRandom()
 
 const adderWasm = fs.readFileSync(path.join(__dirname, 'adder.wasm'))
 
-const { contract, hash } = await Contract.deploy(addderWasm, { upgradeable: true }, [ numberToHex(3) ], {
+const { contract } = await Contract.deploy(addderWasm, { upgradeable: true }, [ numberToHex(3) ], {
   provider,
   signer: wallet,
   sender: wallet.address(),
 })
 
-console.log(`Contract will be deployed at: ${contract.address}`)
-
-await provider.waitForTransaction(hash)
-
-// At this point we can use the "contract" instance, knowing that the contract has been deployed successfully
+console.log(`Contract has been deployed at: ${contract.address}`)
 ```
-
-Although a `Contract` instance gets returned in the call to `Contract.deploy()` it is important to wait until the transaction has succeeded on chain (as shown in the example above). 
 
 Contract metadata specifies the following properties about a contract and can be changed via an upgrade:
 
@@ -440,9 +432,11 @@ The `index` parameter above refers to the index of the desired value in the retu
 parameter specifies the expected data type of the final parsed result. Thus, in this example `waitingStake` will be of type `Number`. The currently supported 
 types are:
 
+* `BOOLEAN` - booleans (`true` or `false`)
 * `INT` - integers
 * `HEX` - hex strings
 * `STRING` - strings
+* `ADDRESS` - bech32 address strings
 
 ## Invoking via transaction
 
@@ -464,6 +458,7 @@ This will internally do the following in sequence:
 1. Use the current `NetworkConfig` to set the gas price and calculate the gas limit to be used
 1. Sign the transaction using the `Signer`
 1. Broadcast the `SignedTransaction` to the network using the `Provider`
+1. Wait for transaction to finish executing using the `Provider.waitForTransaction()`
 
 We can of course override the various values on a per-call basis:
 
@@ -484,13 +479,29 @@ await contract.invoke('method name', [ /* method arguments */], {
 })
 ```
 
-The Provider can be used to monitor transaction progress:
+### Transferring eGLD and tokens
+
+When invoking a contract method it is possible to transfer both eGLD and ESDT tokens as part of the call. The `TransactionOptions` parameter has the following properties which can be set:
+
+* `value` (`string`) - eGLD amount to send (denominated in smallest unit).
+* `esdt` (`TokenAmount`) - ESDT token amount to send.
+
+For example:
 
 ```js
-const { hash } = await contract.invoke('method name', [ /* method arguments */])
+const c = Contract.at('erd1qq....', { provider })
 
-await provider.waitForTransaction(hash)
+const t = await Token.issue('MyToken', 'MYTOKEN', '1000', 18, ...)
+
+await c.invoke('doSomething', [], {
+  value: '1000000000000000000', // 1 eGLD
+  esdt: {
+    id: t.id,
+    value: '999'
+  }
+})
 ```
+
 
 ### Upgrading
 
@@ -506,9 +517,7 @@ const contract = await Contract.at('erdq1...', {
   sender: wallet.address(),
 })
 
-const { hash } = await contract.upgrade(/*new code wasm */, /* new metadata */, /* constructor args */)
-
-await provider.waitForTransaction(hash)
+await contract.upgrade(/*new code wasm */, /* new metadata */, /* constructor args */)
 ```
 
 ### Function arguments
@@ -529,6 +538,85 @@ const ret = await c.query('getValues', [
   stringToHex("name"),
   numberToHex(5)
 ])
+```
+
+
+## Tokens
+
+ESDT tokens are supported out-of-the-box using the `Tokens` class. 
+
+### List all tokens
+
+To fetch a list of all available tokens:
+
+```js
+const { Token } = require('elrondjs')
+
+const ids = await Token.getAllTokenIds({ provider })
+```
+
+This returns the list of unique identifiers of each token. To obtain more detailed information about a token you will 
+need to use load each individual token and then call the `getInfo()` method (see below).
+
+### Creating a new token
+
+```js
+const token = await Token.new(
+  'TokenName', // name
+  'TICKER', // ticker
+  '1000', // supply
+  18, // num decimals
+  {
+    // a "TokenConfig" object
+    canBurn: false,
+    canChangeOwner: false,
+    canFreeze: false,
+    canMint: false,
+    canPause: false,
+    canUpgrade: false,
+    canWipe: false,
+  },
+  { 
+    provider,
+    signer,
+    sender,
+  }
+)
+
+console.log(token.id) // unique token identifier
+```
+
+_Note: the `sender` account will be set as the initial owner of the token._
+
+
+### Using an existing token
+
+To load an existing token:
+
+```js
+const token = await Token.load('unique token id', { provider })
+```
+
+### Common operations
+
+Once a `Token` instance has been obtained, the following operations are available:
+
+* `getInfo()` - get information about the token including its owner, pause status, configuration, etc
+* `balanceOf()` - get token balance for given address
+* `transfer()` - send tokens to another address
+* `mint()` - mint more tokens to owner or to a specific address
+* `burn()` - burn one's own tokens
+* `pause()` - pause token minting and transfers
+* `unPause()` - undo a previous `pause()` call
+* `freeze()` - freeze the token balance owned by a specific address
+* `wipe()` - erase a prevously frozen address's token balance 
+* `changeOwner()` - transfer ownership of the token to another address
+* `updateConfig()` - update the token configuration
+
+For example, transferring tokens to another address:
+
+```js
+await token.transfer('recipient bech32 address', '100')  // send 100 tokens to recipient
 ```
 
 ## Typescript support

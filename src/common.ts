@@ -31,7 +31,7 @@ export interface NetworkConfig {
 }
 
 /**
- * An Elrond address.
+ * Data for an Elrond address.
  * 
  * This may be an externally-owned account or a contract address.
  */
@@ -55,6 +55,24 @@ export interface Address {
    */
   code: string,
 }
+
+
+/**
+ * ESDT token data for an Elrond address.
+ * 
+ * This may be an externally-owned account or a contract address.
+ */
+export interface TokenData {
+  /**
+   * The token identifer.
+   */
+  id: string,
+  /**
+   * The token balance.
+   */
+  balance: string,
+}
+
 
 
 /**
@@ -121,17 +139,25 @@ export interface ContractQueryResult {
  */
 export enum ContractQueryResultDataType {
   /**
-   * Integer data type.
+   * Boolean value.
+   */
+  BOOLEAN,
+  /**
+   * Integer.
    */
   INT,
   /**
-   * Hex string data type.
+   * Hex string.
    */
   HEX,
   /**
-   * String data type.
+   * Generic string.
    */
   STRING,
+  /**
+   * Address string.
+   */
+  ADDRESS,
 }
 
 /**
@@ -146,6 +172,10 @@ export interface ContractQueryResultParseOptions {
    * The index into the `returnData` array at which th result lies.
    */
   index?: number,
+  /**
+   * A regular expression for the parsing the result string to obtain the data.
+   */
+  regex?: RegExp,
 }
 
 /**
@@ -219,13 +249,13 @@ export interface SignedTransaction extends Transaction {
  */
 export interface TransactionReceipt {
   /**
-   * The final signed transaction.
-   */
-  signedTransaction: SignedTransaction,
-  /**
    * The transaction hash, for tracking purposes.
    */
   hash: string,
+  /**
+   * On-chain transaction information.
+   */
+  transactionOnChain?: TransactionOnChain,
 }
 
 
@@ -280,6 +310,15 @@ export interface Provider {
    */
   getAddress: (address: string) => Promise<Address>,
   /**
+   * Get ESDT token for given address and token.
+   * 
+   * @param address The address.
+   * @param token The token id.
+   * 
+   * @return Balance as base-10 unsigned integer.
+   */
+  getESDTData: (address: string, token: string) => Promise<TokenData>,
+  /**
    * Query a contract.
    * 
    * This will call the given contract function in read-only mode.
@@ -291,8 +330,10 @@ export interface Provider {
    * Broadcast a signed transaction to the network.
    *
    * @param signedTx The transaction.
+   * 
+   * @return {String} The transaction hash.
    */
-  sendSignedTransaction: (signedTx: SignedTransaction) => Promise<TransactionReceipt>,
+  sendSignedTransaction: (signedTx: SignedTransaction) => Promise<string>,
   /**
    * Wait for a broadcast transaction to finish executing.
    * 
@@ -301,7 +342,7 @@ export interface Provider {
    * @param txHash Hash of transaction to wait for.
    * @throws {TransactionFailedError} If transaction fails.
    */
-  waitForTransaction: (txHash: string) => Promise<TransactionOnChain>,
+  waitForTransaction: (txHash: string) => Promise<TransactionReceipt>,
   /**
    * Get information about a transaction.
    *
@@ -338,6 +379,8 @@ export interface Wallet extends Signer {
 
 
 
+
+
 /**
  * Options for interacting sending transactions.
  */
@@ -352,6 +395,12 @@ export interface TransactionOptions {
    * Denominated in the smallest eGLD unit (10^18).
    */
   value?: string,
+  /**
+   * ESDT token to transfer.
+   * 
+   * Only applies to contract invocations.
+   */
+  esdt?: TokenAmount,
   /**
    * Gas price.
    * 
@@ -378,73 +427,90 @@ export interface TransactionOptions {
   signer?: Signer,
 }
 
+/**
+ * ESDT token balance/amount representation.
+ */
+export interface TokenAmount {
+  /**
+   * Token id.
+   */
+  id: string,
+  /**
+   * Amount/value.
+   */
+  value: string,
+}
 
 
-// /**
-//  * ESDT token configuration.
-//  */
-// export interface TokenConfig {
-//   /**
-//    * Whether more units of this token can be minted by the owner after initial issuance, increasing the supply.
-//    */
-//   canMint: boolean,
-//   /**
-//    * Whether users may burn some of their tokens, reducing the supply.
-//    */
-//   canBurn: boolean,
-//   /**
-//    * Whether the owner may prevent all transactions of the token, apart from minting and burning.
-//    */
-//   canPause: boolean,
-//   /**
-//    * Whether the owner may freeze a specific account, preventing transfers to and from that account.
-//    */
-//   canFreeze: boolean,
-//   /**
-//    * Whether the owner may wipe out the tokens held by a frozen account, reducing the supply.
-//    */
-//   canWipe: boolean,
-//   /**
-//    * Whether the owner may transfer ownership of the token to another account.
-//    */
-//   canChangeOwner: boolean,
-//   /**
-//    * Whether the owner may change the token configuration.
-//    */
-//   canUpgrade: boolean,
-// }
+/**
+ * ESDT token configuration.
+ */
+export interface TokenConfig {
+  /**
+   * Whether more units of this token can be minted by the owner after initial issuance, increasing the supply.
+   */
+  canMint: boolean,
+  /**
+   * Whether users may burn some of their tokens, reducing the supply.
+   */
+  canBurn: boolean,
+  /**
+   * Whether the owner may prevent all transactions of the token, apart from minting and burning.
+   */
+  canPause: boolean,
+  /**
+   * Whether the owner may freeze a specific account, preventing transfers to and from that account.
+   */
+  canFreeze: boolean,
+  /**
+   * Whether the owner may wipe out the tokens held by a frozen account, reducing the supply.
+   */
+  canWipe: boolean,
+  /**
+   * Whether the owner may transfer ownership of the token to another account.
+   */
+  canChangeOwner: boolean,
+  /**
+   * Whether the owner may change the token configuration.
+   */
+  canUpgrade: boolean,
+}
 
 
-// /**
-//  * ESDT token information.
-//  */
-// export interface TokenInfo {
-//   /**
-//    * Token identifier.
-//    */
-//   id: string,
-//   /**
-//    * The user-friendly name of the token.
-//    */
-//   name: string,
-//   /**
-//    * The ticker of the token.
-//    */
-//   ticker: string,
-//   /**
-//    * The bech32 address of the owner of this token.
-//    */
-//   owner: string,
-//   /**
-//    * Total supply.
-//    */
-//   supply: string,
-//   /**
-//    * Whether token is currently paused.
-//    */
-//   paused: boolean,
-//   /**
-//    * Token configuration.
-//    */
-//   config: TokenConfig,
-// }
+/**
+ * ESDT token information.
+ */
+export interface TokenInfo {
+  /**
+   * Token identifier.
+   */
+  id: string,
+  /**
+   * The user-friendly name of the token.
+   */
+  name: string,
+  /**
+   * The ticker of the token.
+   */
+  ticker: string,
+  /**
+   * The bech32 address of the owner of this token.
+   */
+  owner: string,
+  /**
+   * Total supply, denominated in base-10.
+   */
+  supply: string,
+  /**
+   * No. of decimals.
+   */
+  decimals: number,
+  /**
+   * Whether token is currently paused.
+   */
+  paused: boolean,
+  /**
+   * Token configuration.
+   */
+  config: TokenConfig,
+}

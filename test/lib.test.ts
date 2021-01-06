@@ -1,5 +1,5 @@
 import { expect } from './utils'
-import { addressToHexString, hexStringToAddress, stringToHex, numberToHex, keccak, contractMetadataToString } from '../dist/cjs'
+import { addressToHexString, hexStringToAddress, stringToHex, numberToHex, keccak, contractMetadataToString } from '../src'
 
 describe('Lib utils', () => {
   it('address -> hex', async () => {

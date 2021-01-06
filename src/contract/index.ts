@@ -1,4 +1,5 @@
 import { Buffer } from 'buffer'
+import { BigVal } from 'bigval'
 
 import { 
   ContractQueryResult, 
@@ -10,18 +11,18 @@ import {
   ContractMetadata,
 } from '../common'
 
-import { TransactionOptionsBase, joinDataArguments, TransactionBuilder, verifyTransactionOptions, ADDRESS_ZERO_BECH32, ARWEN_VIRTUAL_MACHINE, addressToHexString, keccak, hexStringToAddress, contractMetadataToString } from '../lib'
+import { TransactionOptionsBase, joinDataArguments, TransactionBuilder, verifyTransactionOptions, ADDRESS_ZERO_BECH32, ARWEN_VIRTUAL_MACHINE, addressToHexString, keccak, hexStringToAddress, contractMetadataToString, stringToHex, numberToHex } from '../lib'
 
 
 /**
  * @internal
  */
-const queryResultValueToHex = (val: string) => `0x${Buffer.from(val, 'base64').toString('hex')}`  
+const queryResultValueToHex = (val: string) => Buffer.from(val, 'base64').toString('hex')
 
 /**
  * @internal
  */
-const queryResultValueToString = (val: string) => `0x${Buffer.from(val, 'base64').toString('utf8')}`  
+const queryResultValueToString = (val: string) => Buffer.from(val, 'base64').toString('utf8')
 
 
 /**
@@ -42,32 +43,74 @@ export interface ContractDeploymentTransactionReceipt extends TransactionReceipt
  * @param result The query result.
  * @param options Parsing options.
  */
-export const parseQueryResult = (result: ContractQueryResult, options: ContractQueryResultParseOptions): (string | number) => {
+export const parseQueryResult = (result: ContractQueryResult, options: ContractQueryResultParseOptions): (string | BigVal | boolean) => {
   options.index = options.index || 0
 
-  const val = result.returnData[options.index]
+  const inputVal = result.returnData[options.index]
 
-  switch (options.type) {
-    case ContractQueryResultDataType.INT:
-      if (!val) {
-        return 0
-      } else {
-        return parseInt(queryResultValueToHex(val), 16)
-      }
-    case ContractQueryResultDataType.HEX:
-      if (!val) {
-        return '0x0'
-      } else {
-        return queryResultValueToHex(val)
-      }
-    case ContractQueryResultDataType.STRING:
-        if (!val) {
-          return ''
+  if (options.regex) {
+    const parsed = inputVal ? options.regex.exec(queryResultValueToString(inputVal)) : null
+    const parsedVal = (parsed && parsed[1]) ? parsed[1] : ''
+
+    switch (options.type) {
+      case ContractQueryResultDataType.BOOLEAN: {
+        if (!parsedVal) {
+          return false
         } else {
-          return queryResultValueToString(val)
+          return parsedVal.includes('true')
         }
-    default:
-      return val
+      }
+      case ContractQueryResultDataType.INT: {
+        if (!parsedVal) {
+          return new BigVal(0).toString()
+        } else {
+          return new BigVal(parsedVal).toString()
+        }
+      }
+      case ContractQueryResultDataType.ADDRESS: {
+        return hexStringToAddress(queryResultValueToHex(inputVal))
+      }
+      case ContractQueryResultDataType.HEX: {
+        if (!parsedVal) {
+          return '0x0'
+        } else {
+          return queryResultValueToHex(inputVal)
+        }
+      }
+      default: {
+        return parsedVal
+      }
+    }
+  } else {
+    switch (options.type) {
+      case ContractQueryResultDataType.BOOLEAN: {
+        if (!inputVal) {
+          return false
+        } else {
+          return queryResultValueToString(inputVal).includes('true')
+        }
+      }
+      case ContractQueryResultDataType.INT: {
+        if (!inputVal) {
+          return new BigVal(0).toString()
+        } else {
+          return new BigVal(`0x${queryResultValueToHex(inputVal)}`).toString()
+        }
+      }
+      case ContractQueryResultDataType.ADDRESS: {
+        return hexStringToAddress(queryResultValueToHex(inputVal))
+      }
+      case ContractQueryResultDataType.HEX: {
+        if (!inputVal) {
+          return '0x0'
+        } else {
+          return queryResultValueToHex(inputVal)
+        }
+      }
+      default: {
+        return queryResultValueToString(inputVal)
+      }
+    }
   }
 }
 
@@ -169,7 +212,29 @@ class ContractInvocationBuilder extends TransactionBuilder {
   }
 
   public getTransactionDataString(): string {
-    return joinDataArguments(this._func, ...this._args)
+    let args: string[] = []
+
+    // check if we should transfer a token along with this call!
+    if (this._options) {
+      const { esdt } = this._options
+
+      if (esdt) {
+        args = [
+          'ESDTTransfer',
+          stringToHex(esdt.id),
+          numberToHex(esdt.value), 
+          stringToHex(this._func),
+          ...this._args
+        ]
+      }
+    }
+
+    // if not yet set then it's just a standard function call
+    if (!args.length) {
+      args = [this._func, ...this._args]
+    }
+
+    return joinDataArguments(...args)
   }
 
   public getReceiverAddress(): string {
@@ -257,10 +322,11 @@ export class Contract extends TransactionOptionsBase {
 
     // sign and send
     const signedTx = await signer!.signTransaction(tx, provider!)
-    const txReceipt = await provider!.sendSignedTransaction(signedTx)
+    const hash = await provider!.sendSignedTransaction(signedTx)
+    const receipt = await provider!.waitForTransaction(hash)
 
     return {
-      ...txReceipt,
+      ...receipt,
       contract: new Contract(computedAddress, {
         ...options,
         gasLimit: undefined, // reset gas limit
@@ -401,8 +467,8 @@ export class Contract extends TransactionOptionsBase {
     const tx = await obj.toTransaction()
 
     const signedTx = await mergedOptions.signer!.signTransaction(tx, mergedOptions.provider!)
-
-    return await mergedOptions.provider!.sendSignedTransaction(signedTx)
+    const hash = await mergedOptions.provider!.sendSignedTransaction(signedTx)
+    return mergedOptions.provider!.waitForTransaction(hash)
   }
 
 
@@ -421,7 +487,7 @@ export class Contract extends TransactionOptionsBase {
     const tx = await obj.toTransaction()
 
     const signedTx = await mergedOptions.signer!.signTransaction(tx, mergedOptions.provider!)
-
-    return await mergedOptions.provider!.sendSignedTransaction(signedTx)
+    const hash = await mergedOptions.provider!.sendSignedTransaction(signedTx)
+    return mergedOptions.provider!.waitForTransaction(hash)
   }
 }

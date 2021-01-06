@@ -90,4 +90,5 @@ npm test
 
 ## License
 
-MIT
+ISC
+

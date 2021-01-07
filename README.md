@@ -21,6 +21,8 @@ Features:
 
 ## Installation
 
+_Note: Node 12 or above is required to use elrondjs_
+
 ```
 npm install --save elrondjs
 ```

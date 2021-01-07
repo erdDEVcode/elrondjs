@@ -1,3 +1,10 @@
+# [2.1.0](https://github.com/erdDEVcode/elrondjs/compare/v2.0.1...v2.1.0) (2021-01-07)
+
+
+### Features
+
+* added request hooks for api base layer ([321eaf8](https://github.com/erdDEVcode/elrondjs/commit/321eaf8999cb5713e7d793b9bd95dbb25ed6dede))
+
 ## [2.0.1](https://github.com/erdDEVcode/elrondjs/compare/v2.0.0...v2.0.1) (2021-01-07)
 
 # [2.0.0](https://github.com/erdDEVcode/elrondjs/compare/v1.12.1...v2.0.0) (2021-01-06)

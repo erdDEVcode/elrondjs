@@ -438,7 +438,7 @@ types are:
 * `STRING` - strings
 * `ADDRESS` - bech32 address strings
 
-## Invoking via transaction
+### Invoking via transaction
 
 If we wish to send a transaction to a contract (i.e. write data) we need to pass in a `Signer` and set the `sender` address for transactions:
 
@@ -491,7 +491,7 @@ For example:
 ```js
 const c = Contract.at('erd1qq....', { provider })
 
-const t = await Token.issue('MyToken', 'MYTOKEN', '1000', 18, ...)
+const t = await Token.new('MyToken', 'MYTOKEN', '1000', 18, ...)
 
 await c.invoke('doSomething', [], {
   value: '1000000000000000000', // 1 eGLD

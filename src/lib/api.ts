@@ -1,12 +1,13 @@
 import axios, { AxiosInstance, AxiosRequestConfig, ResponseType, Method, AxiosError } from 'axios'
 
 
+
 /**
  * Base options for for all API  requests.
  *
  * This can be overridden on a per-request basis.
  */
-export interface ApiOptions {
+export interface ApiGlobalCallOptions {
   /**
    * Milliseconds to count until the request automatically times out.
    * 
@@ -28,12 +29,14 @@ export interface ApiOptions {
 }
 
 
+
+
 /**
  * Options for individual API reqeusts.
  * 
  * This will override any equivalent `ApiOptions` options set at the instance level in the constructor.
  */
-export interface ApiCallOptions extends ApiOptions {
+export interface ApiCallOptions extends ApiGlobalCallOptions {
   /**
    * Body to submit along with the request.
    */
@@ -48,6 +51,35 @@ export interface ApiCallOptions extends ApiOptions {
   method?: Method,
 }
 
+
+/**
+ * Configuration for an API.
+ */
+export interface ApiConfig {
+  /**
+   * Global call options for all requests.
+   */
+  callOptions?: ApiGlobalCallOptions,
+  /**
+   * Hook for debugging requests.
+   * 
+   * @param urlPath the URL path being called.
+   * @param requestOptions the final request options passed to Axios.
+   */
+  onRequest?: (urlPath: string, requestOptions: ApiCallOptions) => void,
+  /**
+   * Hook for debugging responses.
+   * 
+   * @param urlPath the URL path being called.
+   * @param requestOptions the final request options passed to Axios.
+   * @param response the response. If set then `error` should be ignored.
+   * @param error the error. If set then `response` should be ignored.
+   */
+  onResponse?: (urlPath: string, requestOptions: ApiCallOptions, response?: any, error?: Error) => void
+}
+
+
+
 /**
  * Base class for API interfaces.
  * 
@@ -56,19 +88,22 @@ export interface ApiCallOptions extends ApiOptions {
 export class Api {
   protected _axios: AxiosInstance
   protected _baseUrl: string
-  protected _defaultOptions: ApiOptions
+  protected _config: ApiConfig | undefined
+  protected _defaultOptions: ApiGlobalCallOptions
 
   /**
    * @param baseUrl The root endpoint for all API requests.
-   * @param options Options to apply to all requests.
+   * @param config Configuration
    */
-  constructor(baseUrl: string, options?: ApiOptions) {
+  constructor(baseUrl: string, config?: ApiConfig) {
     this._baseUrl = baseUrl
 
+    this._config = config
+
     this._defaultOptions = {
-      timeout: options?.timeout || 3000,
-      responseType: options?.responseType || 'json',
-      headers: options?.headers || {},
+      timeout: config?.callOptions?.timeout || 3000,
+      responseType: config?.callOptions?.responseType || 'json',
+      headers: config?.callOptions?.headers || {},
     }
 
     this._axios = axios.create({
@@ -99,13 +134,25 @@ export class Api {
     }
 
     try {
+      if (this._config?.onRequest) {
+        this._config?.onRequest(urlPath, finalOpts)
+      }
+
       ret = await this._axios.request({
         url: urlPath,
         ...finalOpts,
       })
 
+      if (this._config?.onResponse) {
+        this._config?.onResponse(urlPath, finalOpts, ret)
+      }
+
       return this._responseTransformer(ret)
     } catch (err) {
+      if (this._config?.onResponse) {
+        this._config?.onResponse(urlPath, finalOpts, undefined, err)
+      }
+
       return this._responseTransformer(undefined, err)
     }
   }

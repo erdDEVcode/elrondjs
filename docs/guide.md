@@ -119,6 +119,32 @@ Providers must implement the following API:
 * `waitForTransaction: (txHash: string) => Promise<TransactionReceipt>` - wait for transaction to finish executing on the network
 * `getTransaction: (txHash: string) => Promise<TransactionOnChain>` - get transaction information
 
+The `ProxyProvider` constructor takes a second parameter which can be used to configure its default request settings:
+
+```js
+const provider = new ProxyProvider('endpoint URL', {
+  callOptions: { // options to apply to all requests
+    timeout: 5000, // milliseconds
+    headers: {
+      'X-Custom-Header': 'value',
+    },
+  }
+})
+```
+
+The `onRequest` and `onResponse` properties allow for hooking into the request-response process so that you inspect the raw data that gets passed to the underlying [axios](https://www.npmjs.com/package/axios) request package:
+
+```js
+const provider = new ProxyProvider('endpoint URL', {
+  onRequest: (urlPath, requestOptions) => {
+    // will get called for every request, and provides the raw request data that gets passed to Axios
+  },
+  onResponse: (urlPath, requestOptions, response, error) => {
+    // the raw response or error returned for the given request from Axios
+  },
+})
+```
+
 ### Get network config
 
 Basic configuration information about a network can be queried using the `getNetworkConfig()` method, to obtain a `NetworkConfig` instance:

@@ -1,4 +1,4 @@
-import { Api, ApiOptions, TransactionTracker } from '../lib'
+import { Api, ApiConfig, TransactionTracker } from '../lib'
 
 import { 
   Provider,
@@ -64,10 +64,10 @@ export class ProxyProvider extends Api implements Provider {
    * Constructor.
    * 
    * @param api Proxy endpoint base URL.
-   * @param options Options to apply to all requests.
+   * @param config Configuration.
    */
-  constructor(api: string, options?: ApiOptions) {
-    super(api, options)
+  constructor(api: string, config?: ApiConfig) {
+    super(api, config)
   }
 
   /**

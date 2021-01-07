@@ -12,6 +12,25 @@ describe('ProxyProvider', () => {
     proxy = new ProxyProvider(PROXY_ENDPOINT)
   })
 
+  it('provides hooks for outputting raw request/response data', async () => {
+    let gotRequest = false
+    let gotResponse = false
+
+    proxy = new ProxyProvider(PROXY_ENDPOINT, {
+      onRequest: () => {
+        gotRequest = true
+      },
+      onResponse: () => {
+        gotResponse = true
+      },
+    })
+
+    await proxy.getNetworkConfig()
+
+    expect(gotRequest).to.be.true
+    expect(gotResponse).to.be.true
+  })
+
   it('can get network config', async () => {
     const nc = await proxy.getNetworkConfig()
     expect(nc.chainId).to.eql('local-testnet')

@@ -1,3 +1,5 @@
+import { BigVal } from 'bigval'
+
 /**
  * Network configuration.
  * 
@@ -70,7 +72,7 @@ export interface TokenData {
   /**
    * The token balance.
    */
-  balance: string,
+  balance: BigVal,
 }
 
 
@@ -110,6 +112,14 @@ export interface ContractQueryParams {
    * Arguments to pass to the function.
    */
   args: string[],
+  /**
+   * Caller bech32 address.
+   */
+  caller?: string,
+  /**
+   * Caller value.
+   */
+  value?: BigVal,
 }
 
 /**
@@ -139,23 +149,27 @@ export interface ContractQueryResult {
  */
 export enum ContractQueryResultDataType {
   /**
-   * Boolean value.
+   * Boolean value of type `Boolean`.
    */
   BOOLEAN,
   /**
-   * Integer.
+   * Integer of type `Number`.
    */
   INT,
   /**
-   * Hex string.
+   * Big integer of type `BigVal`.
+   */
+  BIG_INT,
+  /**
+   * Hex string of type `string`.
    */
   HEX,
   /**
-   * Generic string.
+   * Generic string of type `string`.
    */
   STRING,
   /**
-   * Address string.
+   * Bech32 address of type `string`.
    */
   ADDRESS,
 }
@@ -172,10 +186,6 @@ export interface ContractQueryResultParseOptions {
    * The index into the `returnData` array at which th result lies.
    */
   index?: number,
-  /**
-   * A regular expression for the parsing the result string to obtain the data.
-   */
-  regex?: RegExp,
 }
 
 /**
@@ -192,10 +202,8 @@ export interface Transaction {
   receiver: string,
   /**
    * The amount of eGLD to transfer.
-   * 
-   * Denominated in the smallest unit (10^18).
    */
-  value: string,
+  value: BigVal,
   /** 
    * The sender nonce to use.
    */
@@ -391,10 +399,8 @@ export interface TransactionOptions {
   sender?: string,
   /**
    * Amount to transfer.
-   * 
-   * Denominated in the smallest eGLD unit (10^18).
    */
-  value?: string,
+  value?: BigVal,
   /**
    * ESDT token to transfer.
    * 
@@ -438,7 +444,7 @@ export interface TokenAmount {
   /**
    * Amount/value.
    */
-  value: string,
+  value: BigVal,
 }
 
 
@@ -498,9 +504,9 @@ export interface TokenInfo {
    */
   owner: string,
   /**
-   * Total supply, denominated in base-10.
+   * Total supply.
    */
-  supply: string,
+  supply: BigVal,
   /**
    * No. of decimals.
    */

@@ -1,3 +1,4 @@
+import { BigVal } from 'bigval'
 import { Api, ApiConfig, TransactionTracker } from '../lib'
 
 import { 
@@ -11,6 +12,7 @@ import {
   TransactionStatus,
   TokenData,
 } from '../common'
+
 
 /**
  * Parse raw transaction data from the chain.
@@ -74,11 +76,11 @@ export class ProxyProvider extends Api implements Provider {
    * Sanitize balance value returned from the Elrond proxy.
    * @param balance 
    */
-  protected _sanitizeBalance (balance: string): string {
+  protected _sanitizeBalance(balance: string): BigVal {
     if (balance === '<nil>') {
-      return '0'
+      return new BigVal(0)
     } else {
-      return balance
+      return new BigVal(balance)
     }
   }
 
@@ -138,16 +140,23 @@ export class ProxyProvider extends Api implements Provider {
   }
 
   public async queryContract(params: ContractQueryParams): Promise<ContractQueryResult> {
+    const obj: any = {
+      scAddress: params.contractAddress,
+      funcName: params.functionName,
+      args: params.args,
+      caller: params.caller,
+    }
+
+    if (params.value) {
+      obj.value = params.value.toString()
+    }
+
     const ret = await this._call(`/vm-values/query`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      data: JSON.stringify({
-        scAddress: params.contractAddress,
-        funcName: params.functionName,
-        args: params.args,
-      }),
+      data: JSON.stringify(obj),
     })
 
     const { data } = this._parseResponse(ret, `Error querying contract`)

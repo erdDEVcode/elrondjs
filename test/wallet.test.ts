@@ -1,3 +1,4 @@
+import { BigVal, BigValScale } from 'bigval'
 import { WALLETS } from 'narya'
 
 import { BasicWallet, ProxyProvider } from '../src'
@@ -39,12 +40,12 @@ MWYyNGMyOTE4MWU2Mzg4ODIyOGRjODFjYTYwZDY5ZTE=
     const signedTransaction = await w.signTransaction({
       sender: w.address(),
       receiver: w.address(),
-      value: '0',
+      value: new BigVal(1, BigValScale.NORMAL),
     }, proxy)
 
     expect(signedTransaction).to.deep.equal({
       nonce: 0,
-      value: '0',
+      value: '1000000000000000000',
       receiver: 'erd1tcylw3y4s2y43xps0cjuvgql2zld9aze4c7ku6ekhezu39tpag5q6audht',
       sender: 'erd1tcylw3y4s2y43xps0cjuvgql2zld9aze4c7ku6ekhezu39tpag5q6audht',
       gasPrice: NaN,
@@ -52,7 +53,7 @@ MWYyNGMyOTE4MWU2Mzg4ODIyOGRjODFjYTYwZDY5ZTE=
       data: '',
       chainID: 'local-testnet',
       version: 1,
-      signature: 'a6775dfd01617638cf8e4535f9aafc238dc48bfea8a966e9198f44b72e2f0a9eff37a014c329a47f53d655b0e26f0fec8b8391e1eb2f7d18e94bc5b313613605'
+      signature: '26e145a58f5fbd6bbc46ad771518e9dc1208db7e03195aaf9ca8846708b95177d3518f99793c081c8210a0cfebe42850debb6f5b06009818cb6abe73f9e47e08'
     })
   })
 
@@ -62,7 +63,7 @@ MWYyNGMyOTE4MWU2Mzg4ODIyOGRjODFjYTYwZDY5ZTE=
     const signedTransaction = await w.signTransaction({
       sender: w.address(),
       receiver: w.address(),
-      value: '0',
+      value: new BigVal(1, BigValScale.NORMAL),
       nonce: 53,
       gasPrice: 50000,
       gasLimit: 200000,
@@ -70,7 +71,7 @@ MWYyNGMyOTE4MWU2Mzg4ODIyOGRjODFjYTYwZDY5ZTE=
 
     expect(signedTransaction).to.deep.equal({
       nonce: 53,
-      value: '0',
+      value: '1000000000000000000',
       receiver: 'erd1tcylw3y4s2y43xps0cjuvgql2zld9aze4c7ku6ekhezu39tpag5q6audht',
       sender: 'erd1tcylw3y4s2y43xps0cjuvgql2zld9aze4c7ku6ekhezu39tpag5q6audht',
       gasPrice: 50000,
@@ -78,7 +79,7 @@ MWYyNGMyOTE4MWU2Mzg4ODIyOGRjODFjYTYwZDY5ZTE=
       data: '',
       chainID: 'local-testnet',
       version: 1,
-      signature: '7b243bb41693566365c8b901d885dc790bc14b6d69900f4be2b1ccd1a9857aa5caa3218bafd56f8c5f63279e6496ed7ff807496ff53394f7206fe30e4e4cec0f'
+      signature: '54c5b4bddf71812f811bdbae1751fae628d30e4f246875d429f127ec34128cba25d31a369f23193ea890b9ef59092336fcff1618e7120cce43f6c8b2d1a59108'
     })
   })
 })

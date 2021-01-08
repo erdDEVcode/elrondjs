@@ -33,7 +33,7 @@ describe('ProxyProvider', () => {
 
   it('can get network config', async () => {
     const nc = await proxy.getNetworkConfig()
-    expect(nc.chainId).to.eql('local-testnet')
+    expect(nc.chainId).to.eq('local-testnet')
   })
 
   it('can get address details', async () => {
@@ -52,7 +52,7 @@ describe('ProxyProvider', () => {
     const tx = await setDefaultGasPriceAndLimit({
       sender: wallet1.address(),
       receiver: wallet2.address(),
-      value: '1',
+      value: new BigVal(1),
     }, proxy)
 
     const signedTx = await wallet1.signTransaction(tx, proxy)
@@ -65,7 +65,7 @@ describe('ProxyProvider', () => {
 
     const endingBalance = new BigVal((await proxy.getAddress(wallet2.address())).balance)
 
-    expect(endingBalance.sub(startingBalance).toNumber()).to.eql(1)
+    expect(endingBalance.sub(startingBalance).toNumber()).to.eq(1)
     
     const txOnChain = receipt.transactionOnChain
     expect(txOnChain).to.exist

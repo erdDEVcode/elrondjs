@@ -11,18 +11,8 @@ import {
   ContractMetadata,
 } from '../common'
 
-import { TransactionOptionsBase, joinDataArguments, TransactionBuilder, verifyTransactionOptions, ADDRESS_ZERO_BECH32, ARWEN_VIRTUAL_MACHINE, addressToHexString, keccak, hexStringToAddress, contractMetadataToString, stringToHex, numberToHex } from '../lib'
+import { TransactionOptionsBase, joinDataArguments, TransactionBuilder, verifyTransactionOptions, ADDRESS_ZERO_BECH32, ARWEN_VIRTUAL_MACHINE, addressToHexString, keccak, hexStringToAddress, contractMetadataToString, stringToHex, numberToHex, queryResultValueToString, queryResultValueToHex } from '../lib'
 
-
-/**
- * @internal
- */
-const queryResultValueToHex = (val: string) => Buffer.from(val, 'base64').toString('hex')
-
-/**
- * @internal
- */
-const queryResultValueToString = (val: string) => Buffer.from(val, 'base64').toString('utf8')
 
 
 /**
@@ -43,73 +33,43 @@ export interface ContractDeploymentTransactionReceipt extends TransactionReceipt
  * @param result The query result.
  * @param options Parsing options.
  */
-export const parseQueryResult = (result: ContractQueryResult, options: ContractQueryResultParseOptions): (string | BigVal | boolean) => {
+export const parseQueryResult = (result: ContractQueryResult, options: ContractQueryResultParseOptions): (string | number | BigVal | boolean) => {
   options.index = options.index || 0
 
   const inputVal = result.returnData[options.index]
 
-  if (options.regex) {
-    const parsed = inputVal ? options.regex.exec(queryResultValueToString(inputVal)) : null
-    const parsedVal = (parsed && parsed[1]) ? parsed[1] : ''
-
-    switch (options.type) {
-      case ContractQueryResultDataType.BOOLEAN: {
-        if (!parsedVal) {
-          return false
-        } else {
-          return parsedVal.includes('true')
-        }
-      }
-      case ContractQueryResultDataType.INT: {
-        if (!parsedVal) {
-          return new BigVal(0).toString()
-        } else {
-          return new BigVal(parsedVal).toString()
-        }
-      }
-      case ContractQueryResultDataType.ADDRESS: {
-        return hexStringToAddress(queryResultValueToHex(inputVal))
-      }
-      case ContractQueryResultDataType.HEX: {
-        if (!parsedVal) {
-          return '0x0'
-        } else {
-          return queryResultValueToHex(inputVal)
-        }
-      }
-      default: {
-        return parsedVal
+  switch (options.type) {
+    case ContractQueryResultDataType.BOOLEAN: {
+      if (!inputVal) {
+        return false
+      } else {
+        return queryResultValueToString(inputVal).includes('true')
       }
     }
-  } else {
-    switch (options.type) {
-      case ContractQueryResultDataType.BOOLEAN: {
-        if (!inputVal) {
-          return false
-        } else {
-          return queryResultValueToString(inputVal).includes('true')
-        }
+    case ContractQueryResultDataType.BIG_INT:
+    case ContractQueryResultDataType.INT: {
+      let ret: BigVal
+
+      if (!inputVal) {
+        ret = new BigVal(0)
+      } else {
+        ret = new BigVal(`0x${queryResultValueToHex(inputVal)}`)
       }
-      case ContractQueryResultDataType.INT: {
-        if (!inputVal) {
-          return new BigVal(0).toString()
-        } else {
-          return new BigVal(`0x${queryResultValueToHex(inputVal)}`).toString()
-        }
+
+      return (options.type === ContractQueryResultDataType.INT ? ret.toNumber() : ret)
+    }
+    case ContractQueryResultDataType.ADDRESS: {
+      return hexStringToAddress(queryResultValueToHex(inputVal))
+    }
+    case ContractQueryResultDataType.HEX: {
+      if (!inputVal) {
+        return '0x0'
+      } else {
+        return queryResultValueToHex(inputVal)
       }
-      case ContractQueryResultDataType.ADDRESS: {
-        return hexStringToAddress(queryResultValueToHex(inputVal))
-      }
-      case ContractQueryResultDataType.HEX: {
-        if (!inputVal) {
-          return '0x0'
-        } else {
-          return queryResultValueToHex(inputVal)
-        }
-      }
-      default: {
-        return queryResultValueToString(inputVal)
-      }
+    }
+    default: {
+      return queryResultValueToString(inputVal)
     }
   }
 }
@@ -450,6 +410,8 @@ export class Contract extends TransactionOptionsBase {
       contractAddress: this._address,
       functionName: func,
       args: args || [],
+      caller: mergedOptions!.sender,
+      value: mergedOptions!.value,
     })
   }
 

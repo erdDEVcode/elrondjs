@@ -1,3 +1,4 @@
+import { BigVal } from "bigval"
 import { Provider, Transaction, TransactionOnChain, TransactionOptions, TransactionReceipt, TransactionStatus } from "../common"
 import { TransactionFailedError } from "../errors"
 import { ARGS_DELIMITER, stringToHex } from "./utils"
@@ -152,7 +153,7 @@ export abstract class TransactionBuilder {
     const tx = await setDefaultGasPriceAndLimit({
       sender: this._options!.sender,
       receiver: this.getReceiverAddress(),
-      value: this._options!.value || '0',
+      value: this._options!.value || new BigVal(0),
       data: this.getTransactionDataString(),
       meta: this._options!.meta,
     }, this._options!.provider)

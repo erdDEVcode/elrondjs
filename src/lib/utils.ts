@@ -30,10 +30,12 @@ export const stringToHex = (arg: string): string => {
  * 
  * This will prefix the returned string with `0`'s in order to ensure an even length.
  * 
+ * If `number` is a `BigVal` then it will be converted to its smallest scale prior to generating a hex representation.
+ * 
  * @param arg number.
  */
 export const numberToHex = (arg: any): string => {
-  let str = new BigVal(arg).toString(16).substr(2)
+  let str = new BigVal(arg).toSmallestScale().toString(16).substr(2)
   if (str.length % 2 !== 0) {
     str = `0${str}`
   }
@@ -110,3 +112,16 @@ export const ADDRESS_ZERO_HEX = '0'.repeat(64)
  */
 export const ADDRESS_ZERO_BECH32 = 'erd1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq6gq4hu' // = hexStringToAddress(ADDRESS_ZERO_HEX)
 
+
+
+/**
+ * Convert query result value to hex.
+ * @internal
+ */
+export const queryResultValueToHex = (val: string) => Buffer.from(val, 'base64').toString('hex')
+
+/**
+ * Convert query result value to string.
+ * @internal
+ */
+export const queryResultValueToString = (val: string) => Buffer.from(val, 'base64').toString('utf8')

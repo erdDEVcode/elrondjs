@@ -3,6 +3,7 @@ import delay from 'delay'
 
 import { expect, PROXY_ENDPOINT } from './utils'
 import { BasicWallet, ProxyProvider, Token } from '../src'
+import { BigVal, BigValScale } from 'bigval'
 
 describe('ESDT tokens', () => {
   const provider = new ProxyProvider(PROXY_ENDPOINT)
@@ -18,7 +19,7 @@ describe('ESDT tokens', () => {
     const t = await Token.new(
       'RamToken', 
       'RAM', 
-      '10000', 
+      new BigVal('10000'), 
       18, 
       {
         canBurn: false,
@@ -40,11 +41,11 @@ describe('ESDT tokens', () => {
 
     const info = await t.getInfo()
 
-    expect(info.name).to.eql('RamToken')
-    expect(info.ticker).to.eql('RAM')
-    expect(info.supply).to.eql('10000')
-    expect(info.decimals).to.eql(18)
-    expect(info.owner).to.eql(WALLETS.bob.bech32)
+    expect(info.name).to.eq('RamToken')
+    expect(info.ticker).to.eq('RAM')
+    expect(info.supply).to.eq('10000')
+    expect(info.decimals).to.eq(18)
+    expect(info.owner).to.eq(WALLETS.bob.bech32)
     expect(info.config.canBurn).to.be.false
     expect(info.config.canChangeOwner).to.be.false
     expect(info.config.canFreeze).to.be.false
@@ -58,7 +59,7 @@ describe('ESDT tokens', () => {
     const t = await Token.new(
       'RamToken',
       'RAM',
-      '10000',
+      new BigVal('10000'),
       18,
       {
         canBurn: false,
@@ -98,7 +99,7 @@ describe('ESDT tokens', () => {
       token = await Token.new(
         name,
         name,
-        '100000000000000000000', /* 100 * 10^18 */
+        new BigVal('100', BigValScale.NORMAL), /* 100 * 10^18 */
         18,
         {
           canBurn: true,
@@ -121,56 +122,56 @@ describe('ESDT tokens', () => {
     })
 
     it('can be transferred', async () => {
-      await token.balanceOf(sender).should.eventually.eql('100000000000000000000')
+      await token.balanceOf(sender).should.eventually.eq('100000000000000000000')
 
-      const reciever = WALLETS.eve.bech32
-      await token.transfer(reciever, '100')
+      const receiver = WALLETS.eve.bech32
+      await token.transfer(receiver, new BigVal('100'))
 
-      await token.balanceOf(reciever).should.eventually.eq('100')
-      await token.balanceOf(sender).should.eventually.eql('99999999999999999900')
+      await token.balanceOf(receiver).should.eventually.eq('100')
+      await token.balanceOf(sender).should.eventually.eq('99999999999999999900')
     })
 
     it('can mint more to the owner', async () => {
       await token.mint('1')
       await delay(15000)
 
-      await token.balanceOf(sender).should.eventually.eql('99999999999999999901')
+      await token.balanceOf(sender).should.eventually.eq('99999999999999999901')
 
       const info = await token.getInfo()
-      expect(info.supply).to.eql('100000000000000000001')
+      expect(info.supply).to.eq('100000000000000000001')
     })
 
     it('can mint more to any address', async () => {
       await token.mint('1', WALLETS.dan.bech32)
       await delay(15000)
 
-      await token.balanceOf(WALLETS.dan.bech32).should.eventually.eql('1')
+      await token.balanceOf(WALLETS.dan.bech32).should.eventually.eq('1')
 
       const info = await token.getInfo()
-      expect(info.supply).to.eql('100000000000000000002')
+      expect(info.supply).to.eq('100000000000000000002')
     })
 
     it('it can burn tokens for sender', async () => {
       await token.burn('1')
       await delay(15000)
 
-      await token.balanceOf(sender).should.eventually.eql('99999999999999999900')
+      await token.balanceOf(sender).should.eventually.eq('99999999999999999900')
 
       // TODO: why doesn't the supply get decreased??
       const info = await token.getInfo()
-      // expect(info.supply).to.eql('100000000000000000001')
+      // expect(info.supply).to.eq('100000000000000000001')
     })
 
     it('it can be paused and unpaused', async () => {
       await token.pause()
       await delay(5000)
 
-      await token.getInfo().should.eventually.have.property('paused').that.equals(true)
+      await token.getInfo().should.eventually.have.property('paused').that.eq(true)
 
       await token.unPause()
       await delay(5000)
 
-      await token.getInfo().should.eventually.have.property('paused').that.equals(false)
+      await token.getInfo().should.eventually.have.property('paused').that.eq(false)
     })
 
     it('it can freeze and unfreeze an address', async () => {
@@ -181,14 +182,14 @@ describe('ESDT tokens', () => {
     })
 
     it('it can wipe frozen address balance', async () => {
-      await token.balanceOf(WALLETS.eve.bech32).should.eventually.not.eql('0')      
+      await token.balanceOf(WALLETS.eve.bech32).should.eventually.not.eq('0')      
 
       await token.freeze(WALLETS.eve.bech32)
       await delay(15000)
       await token.wipe(WALLETS.eve.bech32)
       await delay(15000)
 
-      await token.balanceOf(WALLETS.eve.bech32).should.eventually.eql('0')      
+      await token.balanceOf(WALLETS.eve.bech32).should.eventually.eq('0')      
     })
 
     it('can upgrade its config', async () => {
@@ -214,7 +215,7 @@ describe('ESDT tokens', () => {
       await token.changeOwner(WALLETS.dan.bech32)
       await delay(15000)
 
-      await token.getInfo().should.eventually.have.property('owner').which.equals(WALLETS.dan.bech32)
+      await token.getInfo().should.eventually.have.property('owner').which.eq(WALLETS.dan.bech32)
     })
   })
 })

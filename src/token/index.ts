@@ -1,4 +1,4 @@
-import { BigVal } from 'bigval'
+import { BigVal, BigValScale } from 'bigval'
 
 import {
   TransactionOptions,
@@ -6,12 +6,70 @@ import {
   TokenInfo,
   TransactionReceipt,
   ContractQueryResultDataType,
+  ContractQueryResult,
+  ContractQueryResultParseOptions,
 } from '../common'
 
 
-import { stringToHex, numberToHex, addressToHexString, ARGS_DELIMITER, joinDataArguments, TransactionOptionsBase, TransactionBuilder, convertMapToDataArguments, hexStringToAddress } from '../lib'
+import { stringToHex, numberToHex, addressToHexString, ARGS_DELIMITER, joinDataArguments, TransactionOptionsBase, TransactionBuilder, convertMapToDataArguments, hexStringToAddress, queryResultValueToHex } from '../lib'
 import { Contract, parseQueryResult } from '../contract'
 
+
+/**
+ * Parse token info result.
+ * 
+ * Wrapper around `parseQueryResult()` which performs additional processing.
+ * 
+ * @param result The query result.
+ * @param options Parsing options.
+ * 
+ * @internal
+ */
+export const parseTokenInfo = (result: ContractQueryResult, options: ContractQueryResultParseOptions, regex: RegExp): (string | number | BigVal | boolean) => {
+  const inputVal: string = parseQueryResult(result, {
+    ...options,
+    type: ContractQueryResultDataType.STRING,
+  }) as string
+
+  const parsed = regex.exec(inputVal)
+  const parsedVal = parsed ? parsed![1] : ''
+
+  switch (options.type) {
+    case ContractQueryResultDataType.BOOLEAN: {
+      if (!parsedVal) {
+        return false
+      } else {
+        return parsedVal.includes('true')
+      }
+    }
+    case ContractQueryResultDataType.BIG_INT:
+    case ContractQueryResultDataType.INT: {
+      let ret: BigVal
+
+      if (!parsedVal) {
+        ret = new BigVal(0)
+      } else {
+        ret = new BigVal(parsedVal)
+      }
+
+      return (options.type === ContractQueryResultDataType.INT ? ret.toNumber() : ret)
+    }
+    case ContractQueryResultDataType.ADDRESS: {
+      return hexStringToAddress(queryResultValueToHex(inputVal))
+    }
+    case ContractQueryResultDataType.HEX: {
+      if (!parsedVal) {
+        return '0x0'
+      } else {
+        return queryResultValueToHex(inputVal)
+      }
+    }
+    case ContractQueryResultDataType.STRING:
+    default: {
+      return parsedVal
+    }
+  }
+}
 
 
 /**
@@ -26,6 +84,11 @@ const METACHAIN_TOKEN_CONTRACT = 'erd1qqqqqqqqqqqqqqqpqqqqqqqqqqqqqqqqqqqqqqqqqq
  */
 const TOKEN_MGMT_STANDARD_GAS_COST = 51000000
 
+/**
+ * Token creation cost.
+ * @internal
+ */
+const TOKEN_CREATION_COST = new BigVal(5, BigValScale.NORMAL, { decimals: 18 })
 
 
 /**
@@ -34,7 +97,7 @@ const TOKEN_MGMT_STANDARD_GAS_COST = 51000000
 class TokenTransferBuilder extends TransactionBuilder {
   protected _receiver: string
   protected _tokenId: string
-  protected _amount: string
+  protected _amount: BigVal
 
 
   /**
@@ -45,7 +108,7 @@ class TokenTransferBuilder extends TransactionBuilder {
    * @param amount No. of tokens to transfer.
    * @param options Transaction options.
    */
-  constructor(receiver: string, tokenId: string, amount: string, options?: TransactionOptions) {
+  constructor(receiver: string, tokenId: string, amount: BigVal, options?: TransactionOptions) {
     super(options)
     this._receiver = receiver
     this._tokenId = tokenId
@@ -121,7 +184,7 @@ export class Token extends TransactionOptionsBase {
    * @param initialConfig Initial token configuration.
    * @param options Transaction options for interacting with the blockchain. These will be the default options used for all subsequent operations.
    */
-  public static async new(name: string, ticker: string, initialSupply: string, numDecimals: number = 18, initialConfig: TokenConfig, options: TransactionOptions): Promise<Token> {
+  public static async new(name: string, ticker: string, initialSupply: BigVal, numDecimals: number = 18, initialConfig: TokenConfig, options: TransactionOptions): Promise<Token> {
     const c = new Contract(METACHAIN_TOKEN_CONTRACT, options)
 
     const tx = await c.invoke('issue', [
@@ -132,7 +195,7 @@ export class Token extends TransactionOptionsBase {
       ...convertMapToDataArguments(initialConfig)
     ], {
       gasLimit: TOKEN_MGMT_STANDARD_GAS_COST,
-      value: '5000000000000000000' /* 5 eGLD */
+      value: TOKEN_CREATION_COST /* 5 eGLD */
     })
 
     await options.provider!.waitForTransaction(tx.hash)
@@ -144,10 +207,11 @@ export class Token extends TransactionOptionsBase {
       const t = new Token(id, c, options)
       try {
         const info = await t.getInfo()
-        if (info.name === name && info.supply === initialSupply && info.owner === options.sender) {
+        if (info.name === name && info.supply.eq(initialSupply) && info.owner === options.sender) {
           return t
         }
       } catch (err) {
+        console.log(err)
         /* if id invalid then skip */
       }
     }
@@ -192,17 +256,17 @@ export class Token extends TransactionOptionsBase {
       name: (parseQueryResult(ret, { type: ContractQueryResultDataType.STRING, index: 0 }) as string),
       ticker: this._id.substr(0, this._id.indexOf('-')),
       owner: (parseQueryResult(ret, { type: ContractQueryResultDataType.ADDRESS, index: 1 }) as string),
-      supply: (parseQueryResult(ret, { type: ContractQueryResultDataType.INT, index: 2, regex: /(.+)/ }) as string),
-      decimals: new BigVal(parseQueryResult(ret, { type: ContractQueryResultDataType.INT, index: 4, regex: /NumDecimals\-(.+)/ }) as string).toNumber(),
-      paused: (parseQueryResult(ret, { type: ContractQueryResultDataType.BOOLEAN, index: 5, regex: /IsPaused\-(.+)/ }) as boolean),
+      supply: (parseTokenInfo(ret, { type: ContractQueryResultDataType.BIG_INT, index: 2 }, /(.+)/) as BigVal),
+      decimals: (parseTokenInfo(ret, { type: ContractQueryResultDataType.INT, index: 4 }, /NumDecimals\-(.+)/) as number),
+      paused: (parseTokenInfo(ret, { type: ContractQueryResultDataType.BOOLEAN, index: 5 }, /IsPaused\-(.+)/) as boolean),
       config: {
-        canUpgrade: (parseQueryResult(ret, { type: ContractQueryResultDataType.BOOLEAN, index: 6, regex: /CanUpgrade\-(.+)/ }) as boolean),
-        canMint: (parseQueryResult(ret, { type: ContractQueryResultDataType.BOOLEAN, index: 7, regex: /CanMint\-(.+)/ }) as boolean),
-        canBurn: (parseQueryResult(ret, { type: ContractQueryResultDataType.BOOLEAN, index: 8, regex: /CanBurn\-(.+)/ }) as boolean),
-        canChangeOwner: (parseQueryResult(ret, { type: ContractQueryResultDataType.BOOLEAN, index: 9, regex: /CanChangeOwner\-(.+)/ }) as boolean),
-        canPause: (parseQueryResult(ret, { type: ContractQueryResultDataType.BOOLEAN, index: 10, regex: /CanPause\-(.+)/ }) as boolean),
-        canFreeze: (parseQueryResult(ret, { type: ContractQueryResultDataType.BOOLEAN, index: 11, regex: /CanFreeze\-(.+)/ }) as boolean),
-        canWipe: (parseQueryResult(ret, { type: ContractQueryResultDataType.BOOLEAN, index: 12, regex: /CanWipe\-(.+)/ }) as boolean),
+        canUpgrade: (parseTokenInfo(ret, { type: ContractQueryResultDataType.BOOLEAN, index: 6 }, /CanUpgrade\-(.+)/) as boolean),
+        canMint: (parseTokenInfo(ret, { type: ContractQueryResultDataType.BOOLEAN, index: 7 }, /CanMint\-(.+)/) as boolean),
+        canBurn: (parseTokenInfo(ret, { type: ContractQueryResultDataType.BOOLEAN, index: 8 }, /CanBurn\-(.+)/) as boolean),
+        canChangeOwner: (parseTokenInfo(ret, { type: ContractQueryResultDataType.BOOLEAN, index: 9 }, /CanChangeOwner\-(.+)/) as boolean),
+        canPause: (parseTokenInfo(ret, { type: ContractQueryResultDataType.BOOLEAN, index: 10 }, /CanPause\-(.+)/) as boolean),
+        canFreeze: (parseTokenInfo(ret, { type: ContractQueryResultDataType.BOOLEAN, index: 11 }, /CanFreeze\-(.+)/) as boolean),
+        canWipe: (parseTokenInfo(ret, { type: ContractQueryResultDataType.BOOLEAN, index: 12 }, /CanWipe\-(.+)/) as boolean),
       }
     }
   }
@@ -214,7 +278,7 @@ export class Token extends TransactionOptionsBase {
    * @param address Address in bech-32 format.
    * @param options Transaction options to override the default ones with.
    */
-  public async balanceOf(address: string, options?: TransactionOptions): Promise<string> {
+  public async balanceOf(address: string, options?: TransactionOptions): Promise<BigVal> {
     const opts = await this._mergeTransactionOptions(options, 'provider')
 
     const { balance } = await opts.provider!.getESDTData(address, this.id)
@@ -231,7 +295,7 @@ export class Token extends TransactionOptionsBase {
    * @param amount No. of tokens to transfer.
    * @param options Transaction options to override the default ones with.
    */
-  public async transfer(to: string, amount: string, options?: TransactionOptions): Promise<TransactionReceipt> {
+  public async transfer(to: string, amount: BigVal, options?: TransactionOptions): Promise<TransactionReceipt> {
     const opts = this._mergeTransactionOptions({
       gasLimit: 500000,
       ...options

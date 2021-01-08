@@ -19,7 +19,7 @@ export abstract class WalletBase implements Wallet {
       tx.nonce || nonceOnChain,
       address,
       tx.receiver,
-      tx.value,
+      tx.value.toSmallestScale().toString(),
       parseInt(`${tx.gasPrice!}`, 10),
       parseInt(`${tx.gasLimit!}`, 10),
       tx.data,

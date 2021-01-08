@@ -264,10 +264,12 @@ _Note: the `meta` parameter is non-standard and optional, and is meant for custo
 A simple transaction can be constructed as follows:
 
 ```js
+const { BigVal } = require('bigval')
+
 const tx = {
   sender: 'erd1tmz6ax3ylejsa3n528uedztrnp70w4p4ptgz23harervvnnf932stkw6h9',
   receiver: 'erd19hdzdg2tmjmfk2kvplsssf3ps7rnyaumhpjhg0l50r938hftkh2qr4cu92',
-  value: '2000000000000000000' // 2 eGLD
+  value: new BigVal(2, BigValScale.NORMAL) // 2 eGLD
 }
 ```
 
@@ -312,7 +314,7 @@ The gas price and gas limits can be auto-calculated:
 const tx = await setDefaultGasPriceAndLimit({
   sender: 'erd1tmz6ax3ylejsa3n528uedztrnp70w4p4ptgz23harervvnnf932stkw6h9',
   receiver: 'erd19hdzdg2tmjmfk2kvplsssf3ps7rnyaumhpjhg0l50r938hftkh2qr4cu92',
-  value: '2000000000000000000', // 2 eGLD
+  value: new BigVal(2, BigValScale.NORMAL), // 2 eGLD
   data: 'test',
 }, provider)
 
@@ -418,11 +420,21 @@ To query a contract (i.e. call a read-only method on it):
 await contract.query('method name', [ /* method arguments */ ])
 ```
 
-This will internally query the blockchain using the provider passed in during construction. The provider can be overridden on a per-call basis:
+This will internally query the blockchain in read-only mode (i.e. not using a transaction) using the provider passed in during construction. The provider can be overridden on a per-call basis:
 
 ```js
 await contract.query('method name', [ /* method arguments */ ], { 
   provider: ...// another Provider instance to use instead of the one passed in to the constructor
+})
+```
+
+If the smart contract method you are querying makes use of the caller address and/or value transferred you can also set these using the transaction options:
+
+```js
+await contract.query('method name', [ /* method arguments */ ], { 
+  provider: ..., // another Provider instance to use instead of the one passed in to the constructor
+  caller: 'erd1343....',
+  value: new BigVal(100, BigValScale.NORMAL), // 100 eGLD
 })
 ```
 
@@ -451,18 +463,20 @@ const returnData = await contract.query('getUserStakeByType', [ addressToHexStri
 The raw returned data is usually in string format. To parse the data to obtain the value we want we use the `parseQueryResult()` method:
 
 ```js
+// this will return a Number
 const waitingStake = parseQueryResult(returnData, { index: 1, type: ContractQueryResultDataType.INT })
 ```
 
-The `index` parameter above refers to the index of the desired value in the return data array. If ommitted then it's assumed to equal `0`. The `type` 
-parameter specifies the expected data type of the final parsed result. Thus, in this example `waitingStake` will be of type `Number`. The currently supported 
-types are:
+The `index` parameter above refers to the index of the desired value in the return data array. If ommitted then it's assumed to equal `0`. The `type` parameter specifies the expected data type of the final parsed result. Thus, in this example `waitingStake` will be of type `Number`. The currently supported types are:
 
-* `BOOLEAN` - booleans (`true` or `false`)
-* `INT` - integers
-* `HEX` - hex strings
-* `STRING` - strings
-* `ADDRESS` - bech32 address strings
+* `BOOLEAN` (`Boolean`) - boolean values
+* `INT` (`Number`) - integers
+* `BIG_INT` (`BigVal`) - large integers
+* `HEX` - (`string`) - hex strings
+* `ADDRESS` (`string`) - bech32 addresses
+* `STRING` (`string`) - general strings
+
+The `BigVal` type is from the [bigval](https://github.com/erdDEVcode/bigval) library and is the recommended way of handling large numbers in your code.
 
 ### Invoking via transaction
 
@@ -590,7 +604,7 @@ need to use load each individual token and then call the `getInfo()` method (see
 const token = await Token.new(
   'TokenName', // name
   'TICKER', // ticker
-  '1000', // supply
+  new BigVal('1000'), // supply
   18, // num decimals
   {
     // a "TokenConfig" object

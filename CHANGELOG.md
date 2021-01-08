@@ -1,3 +1,10 @@
+# [2.2.0](https://github.com/erdDEVcode/elrondjs/compare/v2.1.0...v2.2.0) (2021-01-08)
+
+
+### Features
+
+* use BigVal for amounts ([b46c3fe](https://github.com/erdDEVcode/elrondjs/commit/b46c3fea329568a64ebf4c5fa62695045fccddbb))
+
 # [2.1.0](https://github.com/erdDEVcode/elrondjs/compare/v2.0.1...v2.1.0) (2021-01-07)
 
 

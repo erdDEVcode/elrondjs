@@ -1,4 +1,4 @@
-import { BigVal, BigValScale } from 'bigval'
+import { BigVal } from 'bigval'
 import { WALLETS } from 'narya'
 
 import { BasicWallet, ProxyProvider } from '../src'
@@ -40,7 +40,7 @@ MWYyNGMyOTE4MWU2Mzg4ODIyOGRjODFjYTYwZDY5ZTE=
     const signedTransaction = await w.signTransaction({
       sender: w.address(),
       receiver: w.address(),
-      value: new BigVal(1, BigValScale.NORMAL),
+      value: new BigVal(1, 'coins'),
     }, proxy)
 
     expect(signedTransaction).to.deep.equal({
@@ -63,7 +63,7 @@ MWYyNGMyOTE4MWU2Mzg4ODIyOGRjODFjYTYwZDY5ZTE=
     const signedTransaction = await w.signTransaction({
       sender: w.address(),
       receiver: w.address(),
-      value: new BigVal(1, BigValScale.NORMAL),
+      value: new BigVal(1, 'coins'),
       nonce: 53,
       gasPrice: 50000,
       gasLimit: 200000,

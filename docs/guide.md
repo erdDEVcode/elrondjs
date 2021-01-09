@@ -269,7 +269,7 @@ const { BigVal } = require('bigval')
 const tx = {
   sender: 'erd1tmz6ax3ylejsa3n528uedztrnp70w4p4ptgz23harervvnnf932stkw6h9',
   receiver: 'erd19hdzdg2tmjmfk2kvplsssf3ps7rnyaumhpjhg0l50r938hftkh2qr4cu92',
-  value: new BigVal(2, BigValScale.NORMAL) // 2 eGLD
+  value: new BigVal(2, 'coins') // 2 eGLD
 }
 ```
 
@@ -314,7 +314,7 @@ The gas price and gas limits can be auto-calculated:
 const tx = await setDefaultGasPriceAndLimit({
   sender: 'erd1tmz6ax3ylejsa3n528uedztrnp70w4p4ptgz23harervvnnf932stkw6h9',
   receiver: 'erd19hdzdg2tmjmfk2kvplsssf3ps7rnyaumhpjhg0l50r938hftkh2qr4cu92',
-  value: new BigVal(2, BigValScale.NORMAL), // 2 eGLD
+  value: new BigVal(2, 'coins'), // 2 eGLD
   data: 'test',
 }, provider)
 
@@ -434,7 +434,7 @@ If the smart contract method you are querying makes use of the caller address an
 await contract.query('method name', [ /* method arguments */ ], { 
   provider: ..., // another Provider instance to use instead of the one passed in to the constructor
   caller: 'erd1343....',
-  value: new BigVal(100, BigValScale.NORMAL), // 100 eGLD
+  value: new BigVal(100, 'coins'), // 100 eGLD
 })
 ```
 
@@ -601,6 +601,8 @@ need to use load each individual token and then call the `getInfo()` method (see
 ### Creating a new token
 
 ```js
+const { BigVal } = require('bigval')
+
 const token = await Token.new(
   'TokenName', // name
   'TICKER', // ticker

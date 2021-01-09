@@ -1,4 +1,4 @@
-import { BigVal, BigValScale } from 'bigval'
+import { BigVal } from 'bigval'
 
 import {
   TransactionOptions,
@@ -88,7 +88,7 @@ const TOKEN_MGMT_STANDARD_GAS_COST = 51000000
  * Token creation cost.
  * @internal
  */
-const TOKEN_CREATION_COST = new BigVal(5, BigValScale.NORMAL, { decimals: 18 })
+const TOKEN_CREATION_COST = new BigVal(5, 'coins') // 5 eGLD
 
 
 /**

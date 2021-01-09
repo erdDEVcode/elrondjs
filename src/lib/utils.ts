@@ -35,7 +35,7 @@ export const stringToHex = (arg: string): string => {
  * @param arg number.
  */
 export const numberToHex = (arg: any): string => {
-  let str = new BigVal(arg).toSmallestScale().toString(16).substr(2)
+  let str = new BigVal(arg).toMinScale().toString(16).substr(2)
   if (str.length % 2 !== 0) {
     str = `0${str}`
   }

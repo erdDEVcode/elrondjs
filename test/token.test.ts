@@ -3,7 +3,7 @@ import delay from 'delay'
 
 import { expect, PROXY_ENDPOINT } from './utils'
 import { BasicWallet, ProxyProvider, Token } from '../src'
-import { BigVal, BigValScale } from 'bigval'
+import { BigVal } from 'bigval'
 
 describe('ESDT tokens', () => {
   const provider = new ProxyProvider(PROXY_ENDPOINT)
@@ -99,7 +99,7 @@ describe('ESDT tokens', () => {
       token = await Token.new(
         name,
         name,
-        new BigVal('100', BigValScale.NORMAL), /* 100 * 10^18 */
+        new BigVal('100', 'coins'), /* 100 * 10^18 */
         18,
         {
           canBurn: true,

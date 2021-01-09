@@ -1,6 +1,6 @@
 import { expect } from './utils'
 import { addressToHexString, hexStringToAddress, stringToHex, numberToHex, keccak, contractMetadataToString } from '../src'
-import { BigVal, BigValScale } from 'bigval'
+import { BigVal } from 'bigval'
 
 describe('Lib utils', () => {
   it('address -> hex', async () => {
@@ -19,7 +19,7 @@ describe('Lib utils', () => {
     expect(numberToHex(666)).to.eq('029a')
     expect(numberToHex(10000)).to.eq('2710')
     expect(numberToHex(new BigVal(255))).to.eq('ff')
-    expect(numberToHex(new BigVal(255, BigValScale.NORMAL))).to.eq('0dd2d5fcf3bc9c0000')
+    expect(numberToHex(new BigVal(255, 'coins'))).to.eq('0dd2d5fcf3bc9c0000')
   })
 
   it('keccak', async () => {

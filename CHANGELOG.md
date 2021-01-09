@@ -1,3 +1,10 @@
+# [2.3.0](https://github.com/erdDEVcode/elrondjs/compare/v2.2.0...v2.3.0) (2021-01-09)
+
+
+### Features
+
+* upgrade bigval to new scaling method ([d2318bb](https://github.com/erdDEVcode/elrondjs/commit/d2318bba38246d8abdbfba980ca5257e973b8b06))
+
 # [2.2.0](https://github.com/erdDEVcode/elrondjs/compare/v2.1.0...v2.2.0) (2021-01-08)
 
 

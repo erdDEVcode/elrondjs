@@ -205,14 +205,9 @@ export class Token extends TransactionOptionsBase {
 
     for (let id of possibleIds) {
       const t = new Token(id, c, options)
-      try {
-        const info = await t.getInfo()
-        if (info.name === name && info.supply.eq(initialSupply) && info.owner === options.sender) {
-          return t
-        }
-      } catch (err) {
-        console.log(err)
-        /* if id invalid then skip */
+      const info = await t.getInfo()
+      if (info.name === name && info.supply.eq(initialSupply) && info.owner === options.sender) {
+        return t
       }
     }
 

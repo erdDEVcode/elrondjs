@@ -43,7 +43,7 @@ export const parseQueryResult = (result: ContractQueryResult, options: ContractQ
       if (!inputVal) {
         return false
       } else {
-        return queryResultValueToString(inputVal).includes('true')
+        return queryResultValueToHex(inputVal) === '01'
       }
     }
     case ContractQueryResultDataType.BIG_INT:

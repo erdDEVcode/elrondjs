@@ -1,3 +1,10 @@
+## [2.3.1](https://github.com/erdDEVcode/elrondjs/compare/v2.3.0...v2.3.1) (2021-01-11)
+
+
+### Bug Fixes
+
+* boolean parsing error ([cc9cbf2](https://github.com/erdDEVcode/elrondjs/commit/cc9cbf2158647439876770985997a303a447e66d))
+
 # [2.3.0](https://github.com/erdDEVcode/elrondjs/compare/v2.2.0...v2.3.0) (2021-01-09)
 
 

@@ -1,6 +1,6 @@
 {
   "name": "elrondjs",
-  "version": "2.3.0",
+  "version": "2.3.1",
   "description": "Javascript SDK for the Elrond blockchain with Typescript support.",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",

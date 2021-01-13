@@ -542,6 +542,7 @@ await c.invoke('doSomething', [], {
 })
 ```
 
+_Note: It is not possible to transfer both eGLD and ESDT tokens in the same transaction. This is a limitation within the blockchain protocol itself._
 
 ### Upgrading
 

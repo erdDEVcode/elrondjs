@@ -1,3 +1,5 @@
+## [2.4.1](https://github.com/erdDEVcode/elrondjs/compare/v2.4.0...v2.4.1) (2021-01-14)
+
 # [2.4.0](https://github.com/erdDEVcode/elrondjs/compare/v2.3.2...v2.4.0) (2021-01-14)
 
 ## [2.3.2](https://github.com/erdDEVcode/elrondjs/compare/v2.3.1...v2.3.2) (2021-01-13)

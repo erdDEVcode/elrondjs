@@ -264,7 +264,7 @@ _Note: the `meta` parameter is non-standard and optional, and is meant for custo
 A simple transaction can be constructed as follows:
 
 ```js
-const { BigVal } = require('bigval')
+const { BigVal } = require('elrondjs')
 
 const tx = {
   sender: 'erd1tmz6ax3ylejsa3n528uedztrnp70w4p4ptgz23harervvnnf932stkw6h9',
@@ -476,7 +476,7 @@ The `index` parameter above refers to the index of the desired value in the retu
 * `ADDRESS` (`string`) - bech32 addresses
 * `STRING` (`string`) - general strings
 
-The `BigVal` type is from the [bigval](https://github.com/erdDEVcode/bigval) library and is the recommended way of handling large numbers in your code.
+The `BigVal` type is from the [bigval](https://github.com/erdDEVcode/bigval) library and is the recommended way of handling large numbers in your code. ElrondJS exports a copy of this library through its own API.
 
 ### Invoking via transaction
 
@@ -602,7 +602,7 @@ need to use load each individual token and then call the `getInfo()` method (see
 ### Creating a new token
 
 ```js
-const { BigVal } = require('bigval')
+const { BigVal } = require('elrondjs')
 
 const token = await Token.new(
   'TokenName', // name

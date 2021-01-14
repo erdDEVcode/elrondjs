@@ -1,4 +1,4 @@
-export { BigVal } from 'bigval'
+export * from 'bigval'
 export * from './lib'
 export * from './common'
 export * from './provider'

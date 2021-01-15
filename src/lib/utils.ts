@@ -135,3 +135,4 @@ export const queryResultValueToHex = (val: string) => Buffer.from(val, 'base64')
  * @internal
  */
 export const queryResultValueToString = (val: string) => Buffer.from(val, 'base64').toString('utf8')
+

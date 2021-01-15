@@ -1,0 +1,52 @@
+version: 2.1
+
+
+executors:
+  base:
+    docker:
+      - image: circleci/node:12.13.0
+      - image: hiddentao/erdnet:latest
+        command: /home/erd/elrondsdk/erdpy testnet start
+
+commands:
+  install_node_modules:
+    parameters:
+      executor:
+        type: string
+    steps:
+      - restore_cache:
+          name: Restore npm cache
+          key: << parameters.executor >>-npm-cache-{{ checksum "package-json.lock" }}
+      - run:
+          name: Install dependencies
+          command: npm install
+      - save_cache:
+          name: Save npm cache
+          key: << parameters.executor >>-npm-cache-{{ checksum "package-json.lock" }}
+          paths:
+            - ~/.npm
+
+jobs:
+  build_and_test:
+    executor: base
+    working_directory: ~/repo
+    steps:
+      - checkout:
+          path: ~/repo
+      - install_node_modules:
+          executor: package
+      - run:
+          name: Build outputs
+          command: yarn build
+      - run:
+          name: Testing
+          command: yarn test
+      - persist_to_workspace:
+          root: ~/repo
+          paths: .
+
+workflows:
+  version: 2
+  ci:
+    jobs:
+      - build_and_test

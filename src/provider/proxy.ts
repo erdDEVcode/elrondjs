@@ -51,7 +51,8 @@ export const parseRawTransaction = (tx: any): TransactionOnChain => {
 
   return {
     raw: tx,
-    ...tx,
+    ...tx, 
+    smartContractResults,
     smartContractErrors,
     status,
   }

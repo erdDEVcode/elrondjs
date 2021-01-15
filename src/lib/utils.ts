@@ -26,6 +26,16 @@ export const stringToHex = (arg: string): string => {
 
 
 /**
+ * Convert Hex string to its ASCII representation.
+ * @param arg hex string.
+ */
+export const hexToString = (arg: string): string => {
+  return Buffer.from(arg, 'hex').toString('utf8')
+}
+
+
+
+/**
  * Convert number to its HEX representation.
  * 
  * This will prefix the returned string with `0`'s in order to ensure an even length.
@@ -125,3 +135,4 @@ export const queryResultValueToHex = (val: string) => Buffer.from(val, 'base64')
  * @internal
  */
 export const queryResultValueToString = (val: string) => Buffer.from(val, 'base64').toString('utf8')
+

@@ -298,6 +298,10 @@ export interface TransactionOnChain extends Transaction {
    */
   smartContractErrors: string[],
   /**
+   * Smart contract results.
+   */
+  smartContractResults: any[],
+  /**
    * Transaction result status.
    */
   status: TransactionStatus,

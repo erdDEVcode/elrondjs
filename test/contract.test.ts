@@ -269,7 +269,7 @@ describe('query response parser', () => {
     expect(parseQueryResult({
       ...baseResult,
       returnData: [
-        'dHJ1ZQ==',
+        'AQ==',
       ]
     }, {
       type: ContractQueryResultDataType.BOOLEAN,

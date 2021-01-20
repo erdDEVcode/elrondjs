@@ -334,6 +334,7 @@ const txOnChain = await provider.getTransaction(txReceipt.hash)
 This returns an object with the following properties (in addition to core `Transaction` properties):
 
 * `raw` - raw transaction data
+* `smartContractResults` - list of smart contract result objects.
 * `smartContractErrors` - list of smart contract error messages. If non-empty then transaction is marked as failed.
 * `status` - transaction status - success, pending or failed
 

@@ -11,9 +11,10 @@ import {
 } from '../common'
 
 
-import { stringToHex, numberToHex, addressToHexString, ARGS_DELIMITER, joinDataArguments, TransactionOptionsBase, TransactionBuilder, convertMapToDataArguments, hexStringToAddress, queryResultValueToHex } from '../lib'
+import { stringToHex, numberToHex, addressToHexString, ARGS_DELIMITER, joinDataArguments, TransactionOptionsBase, TransactionBuilder, convertMapToDataArguments, hexStringToAddress, queryResultValueToHex, queryResultValueToString, hexToString } from '../lib'
 import { Contract, parseQueryResult } from '../contract'
 
+const ESDT_TRANSFER_METHOD = 'ESDTTransfer'
 
 /**
  * Parse token info result.
@@ -116,7 +117,7 @@ class TokenTransferBuilder extends TransactionBuilder {
   }
 
   public getTransactionDataString(): string {
-    return joinDataArguments(`ESDTTransfer`, stringToHex(this._tokenId), numberToHex(this._amount))
+    return joinDataArguments(ESDT_TRANSFER_METHOD, stringToHex(this._tokenId), numberToHex(this._amount))
   }
 
   public getReceiverAddress(): string {
@@ -198,20 +199,32 @@ export class Token extends TransactionOptionsBase {
       value: TOKEN_CREATION_COST /* 5 eGLD */
     })
 
-    await options.provider!.waitForTransaction(tx.hash)
+    const ret = await options.provider!.waitForTransaction(tx.hash)
 
     // find out token id
-    const possibleIds = (await Token.getAllTokenIds(options)).reverse().filter(id => id.includes(`${ticker}-`))
+    let tokenId
+    try {
+      for (let result of ret.transactionOnChain!.smartContractResults) {
+        const { data } = result
 
-    for (let id of possibleIds) {
-      const t = new Token(id, c, options)
-      const info = await t.getInfo()
-      if (info.name === name && info.supply.eq(initialSupply) && info.owner === options.sender) {
-        return t
+        if (data.startsWith(ESDT_TRANSFER_METHOD)) {
+          const toks = data.split(ARGS_DELIMITER)
+          tokenId = hexToString(toks[1]) 
+          if (!tokenId) {
+            throw new Error('Id not found in transfer result')
+          }
+          break
+        }
       }
+
+      if (!tokenId) {
+        throw new Error('Transfer result not found')
+      }
+    } catch (err) {
+      throw new Error(`Unable to extract token id: ${err.message}`)
     }
 
-    throw new Error(`Token created, but unable to retrieve token id`)
+    return new Token(tokenId, c, options)
   }
 
 

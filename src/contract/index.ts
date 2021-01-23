@@ -1,18 +1,39 @@
 import { Buffer } from 'buffer'
-import { BigVal } from 'bigval'
 
 import { 
   ContractQueryResult, 
-  ContractQueryResultParseOptions, 
-  ContractQueryResultDataType, 
   TransactionOptions,
   TransactionReceipt,
   Provider,
   ContractMetadata,
 } from '../common'
 
-import { TransactionOptionsBase, joinDataArguments, TransactionBuilder, verifyTransactionOptions, ADDRESS_ZERO_BECH32, ARWEN_VIRTUAL_MACHINE, addressToHexString, keccak, hexStringToAddress, contractMetadataToString, stringToHex, numberToHex, queryResultValueToString, queryResultValueToHex } from '../lib'
+import { 
+  TransactionOptionsBase,
+  joinDataArguments,
+  TransactionBuilder,
+  verifyTransactionOptions,
+  ADDRESS_ZERO_BECH32,
+  ARWEN_VIRTUAL_MACHINE,
+  addressToHexString,
+  keccak,
+  hexStringToAddress,
+  contractMetadataToString,
+  stringToHex,
+  numberToHex 
+} from '../lib'
 
+
+
+/**
+ * Contract transaction options.
+ */
+export interface ContractTransactionOptions extends TransactionOptions {
+  /**
+   * Contract ABI.
+   */
+  abi?: object,
+}
 
 
 /**
@@ -26,54 +47,6 @@ export interface ContractDeploymentTransactionReceipt extends TransactionReceipt
    */
   contract: Contract,
 }
-
-/**
- * Parse a contract query result.
- * 
- * @param result The query result.
- * @param options Parsing options.
- */
-export const parseQueryResult = (result: ContractQueryResult, options: ContractQueryResultParseOptions): (string | number | BigVal | boolean) => {
-  options.index = options.index || 0
-
-  const inputVal = result.returnData[options.index]
-
-  switch (options.type) {
-    case ContractQueryResultDataType.BOOLEAN: {
-      if (!inputVal) {
-        return false
-      } else {
-        return queryResultValueToHex(inputVal) === '01'
-      }
-    }
-    case ContractQueryResultDataType.BIG_INT:
-    case ContractQueryResultDataType.INT: {
-      let ret: BigVal
-
-      if (!inputVal) {
-        ret = new BigVal(0)
-      } else {
-        ret = new BigVal(`0x${queryResultValueToHex(inputVal)}`)
-      }
-
-      return (options.type === ContractQueryResultDataType.INT ? ret.toNumber() : ret)
-    }
-    case ContractQueryResultDataType.ADDRESS: {
-      return hexStringToAddress(queryResultValueToHex(inputVal))
-    }
-    case ContractQueryResultDataType.HEX: {
-      if (!inputVal) {
-        return '0x0'
-      } else {
-        return queryResultValueToHex(inputVal)
-      }
-    }
-    default: {
-      return queryResultValueToString(inputVal)
-    }
-  }
-}
-
 
 
 /**
@@ -92,7 +65,7 @@ class ContractDeploymentBuilder extends TransactionBuilder {
    * @param initArgs Arguments for `init()` method.
    * @param options Transaction options.
    */
-  constructor(code: Buffer, metadata: ContractMetadata, initArgs: string[], options: TransactionOptions) {
+  constructor(code: Buffer, metadata: ContractMetadata, initArgs: string[], options: ContractTransactionOptions) {
     super(options)
     this._code = code
     this._metadata = metadata
@@ -128,7 +101,7 @@ class ContractUpgradeBuilder extends TransactionBuilder {
    * @param initArgs Arguments for `init()` method.
    * @param options Transaction options.
    */
-  constructor(address: string, code: Buffer, metadata: ContractMetadata, initArgs: string[], options: TransactionOptions) {
+  constructor(address: string, code: Buffer, metadata: ContractMetadata, initArgs: string[], options: ContractTransactionOptions) {
     super(options)
     this._address = address
     this._code = code
@@ -164,7 +137,7 @@ class ContractInvocationBuilder extends TransactionBuilder {
    * @param args Arguments to pass to function.
    * @param options Transaction options.
    */
-  constructor(address: string, func: string, args: string[], options: TransactionOptions) {
+  constructor(address: string, func: string, args: string[], options: ContractTransactionOptions) {
     super(options)
     this._address = address
     this._func = func
@@ -202,6 +175,8 @@ class ContractInvocationBuilder extends TransactionBuilder {
   }
 }
 
+
+
 /**
  * Interfaces for working with contracts.
  */
@@ -214,7 +189,7 @@ export class Contract extends TransactionOptionsBase {
    * @param address Contract address.
    * @param options Transaction options.
    */
-  public constructor(address: string, options?: TransactionOptions) {
+  public constructor(address: string, options?: ContractTransactionOptions) {
     super(options)
     this._address = address
   }
@@ -238,7 +213,7 @@ export class Contract extends TransactionOptionsBase {
    * @param address Contract address.
    * @param options Base options for all subsequent transactions and contract querying.
    */
-  public static async at(address: string, options?: TransactionOptions): Promise<Contract> {
+  public static async at(address: string, options?: ContractTransactionOptions): Promise<Contract> {
     // if provider is given then confirm that address contains code!
     if (options?.provider) {
       try {
@@ -268,7 +243,7 @@ export class Contract extends TransactionOptionsBase {
    * @param initArgs Arguments for `init()` method.
    * @param options Base options for all subsequent transactions and contract querying.
    */
-  public static async deploy(code: Buffer, metadata: ContractMetadata, initArgs: string[], options: TransactionOptions): Promise<ContractDeploymentTransactionReceipt> {
+  public static async deploy(code: Buffer, metadata: ContractMetadata, initArgs: string[], options: ContractTransactionOptions): Promise<ContractDeploymentTransactionReceipt> {
     verifyTransactionOptions(options!, 'provider', 'signer', 'sender')
 
     const { provider, sender, signer } = options!
@@ -351,7 +326,7 @@ export class Contract extends TransactionOptionsBase {
    * @param initArgs Arguments for `init()` method.
    * @param options Transaction options.
    */
-  public static createDeployment(code: Buffer, metadata: ContractMetadata, initArgs: string[], options: TransactionOptions): TransactionBuilder {
+  public static createDeployment(code: Buffer, metadata: ContractMetadata, initArgs: string[], options: ContractTransactionOptions): TransactionBuilder {
     verifyTransactionOptions(options, 'provider')
     return new ContractDeploymentBuilder(code, metadata, initArgs, options)
   }
@@ -369,7 +344,7 @@ export class Contract extends TransactionOptionsBase {
    * @param initArgs Arguments for `init()` method.
    * @param options Transaction options.
    */
-  public static createUpgrade(address: string, code: Buffer, metadata: ContractMetadata, initArgs: string[], options: TransactionOptions): TransactionBuilder {
+  public static createUpgrade(address: string, code: Buffer, metadata: ContractMetadata, initArgs: string[], options: ContractTransactionOptions): TransactionBuilder {
     verifyTransactionOptions(options, 'provider')
     return new ContractUpgradeBuilder(address, code, metadata, initArgs, options)
   }
@@ -387,7 +362,7 @@ export class Contract extends TransactionOptionsBase {
    * @param args Arguments to pass to function.
    * @param options Options which will get merged with the base options set in the constructor.
    */
-  public static createInvocation(address: string, func: string, args: string[], options: TransactionOptions): TransactionBuilder {
+  public static createInvocation(address: string, func: string, args: string[], options: ContractTransactionOptions): TransactionBuilder {
     verifyTransactionOptions(options, 'provider')
     return new ContractInvocationBuilder(address, func, args, options)
   }
@@ -403,8 +378,13 @@ export class Contract extends TransactionOptionsBase {
    * @param args Arguments to pass to function.
    * @param options Options which will get merged with the base options set in the constructor.
    */
-  async query(func: string, args?: string[], options?: TransactionOptions): Promise<ContractQueryResult> {
-    const mergedOptions = this._mergeTransactionOptions(options, 'provider')
+  async query(func: string, args?: any[], options?: ContractTransactionOptions): Promise<ContractQueryResult> {
+    const mergedOptions = this._mergeTransactionOptions(options, 'provider') as ContractTransactionOptions
+
+    // use ABI to prepare args
+    if (args && mergedOptions.abi) {
+      args = 
+    }
 
     return await mergedOptions.provider!.queryContract({
       contractAddress: this._address,
@@ -422,7 +402,7 @@ export class Contract extends TransactionOptionsBase {
    * @param args Arguments to pass to function.
    * @param options Options which will get merged with the base options set in the constructor.
    */
-  async invoke(func: string, args?: string[], options?: TransactionOptions): Promise<TransactionReceipt> {
+  async invoke(func: string, args?: string[], options?: ContractTransactionOptions): Promise<TransactionReceipt> {
     const mergedOptions = this._mergeTransactionOptions(options, 'signer', 'provider')
 
     const obj = Contract.createInvocation(this._address, func, args || [], mergedOptions)
@@ -442,7 +422,7 @@ export class Contract extends TransactionOptionsBase {
    * @param initArgs Arguments for `init()` method.
    * @param options Options which will get merged with the base options set in the constructor.
    */
-  async upgrade(code: Buffer, metadata: ContractMetadata, initArgs: string[], options?: TransactionOptions): Promise<TransactionReceipt> {
+  async upgrade(code: Buffer, metadata: ContractMetadata, initArgs: string[], options?: ContractTransactionOptions): Promise<TransactionReceipt> {
     const mergedOptions = this._mergeTransactionOptions(options, 'signer', 'provider')
 
     const obj = Contract.createUpgrade(this._address, code, metadata, initArgs, mergedOptions)

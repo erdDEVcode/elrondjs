@@ -1,4 +1,4 @@
-import Elrond from '@elrondnetwork/elrond-core-js'
+import bech32 from 'bech32'
 import { Buffer } from 'buffer'
 import createKeccakHash from 'keccak'
 import { BigVal } from 'bigval'
@@ -94,8 +94,8 @@ export const contractMetadataToString = (contractMetadata: ContractMetadata): st
  * @param address The address in bech32 format.
  */
 export const addressToHexString = (address: string): string => {
-  const a = new Elrond.account()
-  return a.hexPublicKeyFromAddress(address)
+  const { words } = bech32.decode(address, 256)
+  return Buffer.from(bech32.fromWords(words)).toString('hex')
 }
 
 
@@ -105,8 +105,8 @@ export const addressToHexString = (address: string): string => {
  * @param hex The address in hex format.
  */
 export const hexStringToAddress = (hex: string): string => {
-  const a = new Elrond.account()
-  return a.addressFromHexPublicKey(hex)
+  const words = bech32.toWords(Buffer.from(hex, 'hex'));
+  return bech32.encode('erd', words)
 }
 
 

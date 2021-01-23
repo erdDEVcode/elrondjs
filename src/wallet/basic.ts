@@ -1,8 +1,11 @@
 import { Buffer } from 'buffer'
-import Elrond from '@elrondnetwork/elrond-core-js'
+import * as bip39 from 'bip39'
+import bech32 from 'bech32'
+import crypto from 'crypto'
 
 import { WalletBase } from './base'
-import { Account, validateAccount } from './utils'
+import { KeyPair, generatePairFromMnemonic, sign, generatePublicKey } from './crypto/browser/ed25519Keypair'
+import { generateDerivedKey } from './crypto/browser/keyDerivation'
 
 /**
  * @internal
@@ -11,26 +14,34 @@ const PEM_REGEX = /-----BEGIN[^-]+-----([^-]+)-----END[^-]+/igm
 
 
 /**
+ * @internal
+ */
+const MNEMONIC_LEN = 256
+
+
+/**
  * Generate a random mnemonic.
  */
 export const generateMnemonic = (): string => {
-  return new Elrond.account().generateMnemonic()
+  return bip39.generateMnemonic(MNEMONIC_LEN)
 }
+
+
 
 
 /**
  * Basic wallet.
  */
 export class BasicWallet extends WalletBase {
-  protected _account: Account
+  protected _keyPair: KeyPair
 
   /**
    * Constructor.
    */
-  protected constructor(account: Account) {
+  protected constructor(keyPair: KeyPair) {
     super()
-    this._account = account
-    validateAccount(account)
+    this._keyPair = keyPair
+    this._sign(Buffer.from('test')) // to check that keypair works
   }
 
   /**
@@ -50,9 +61,8 @@ export class BasicWallet extends WalletBase {
     mnemonic = mnemonic.trim()
 
     try {
-      let account = new Elrond.account()
-      account.loadFromMnemonic(mnemonic)
-      return new BasicWallet(account)
+      const keyPair = generatePairFromMnemonic(mnemonic)
+      return new BasicWallet(keyPair)
     } catch (err) {
       throw new Error(`Error deriving from mnemonic: ${err.message}`)
     }
@@ -64,12 +74,45 @@ export class BasicWallet extends WalletBase {
    * @throws {Error} If loading fails.
    */
   public static fromJsonKeyFileString(json: string, password: string): BasicWallet {
-    json = json.trim()
-
     try {
-      let account = new Elrond.account()
-      account.loadFromKeyFile(JSON.parse(json), password)
-      return new BasicWallet(account)
+      const keyFile = JSON.parse(json.trim())
+
+      const { kdfparams } = keyFile.crypto
+
+      const derivedKey = generateDerivedKey(
+        Buffer.from(password),
+        Buffer.from(kdfparams.salt, 'hex'), 
+        kdfparams.n, 
+        kdfparams.r, 
+        kdfparams.p, 
+        kdfparams.dklen
+      )
+
+      const ciphertext = Buffer.from(keyFile.crypto.ciphertext, 'hex')
+
+      const mac = crypto.createHmac('sha256', derivedKey.slice(16, 32))
+        .update(ciphertext)
+        .digest()
+
+      if (mac.toString('hex') !== keyFile.crypto.mac) {
+        throw new Error('MAC mismatch, possibly wrong password')
+      }
+
+      const decipher = crypto.createDecipheriv(keyFile.crypto.cipher, derivedKey.slice(0, 16),
+        Buffer.from(keyFile.crypto.cipherparams.iv, 'hex'))
+
+      let seed = Buffer.concat([decipher.update(ciphertext), decipher.final()])
+      while (seed.length < 32) {
+        let nullBuff = Buffer.from([0x00])
+        seed = Buffer.concat([nullBuff, seed]);
+      }
+
+      const keyPair: KeyPair = {
+        privateKey: seed,
+        publicKey: generatePublicKey(seed),
+      }
+
+      return new BasicWallet(keyPair)
     } catch (err) {
       throw new Error(`Error deriving from JSON: ${err.message}`)
     }
@@ -87,9 +130,13 @@ export class BasicWallet extends WalletBase {
       if (match) {
         const bytes = Buffer.from(Buffer.from(match, 'base64').toString(), 'hex')
         const uint8array = new Uint8Array(bytes)
-        let account = new Elrond.account()
-        account.loadFromPrivateKey(uint8array)
-        return new BasicWallet(account)
+
+        const keyPair: KeyPair = {
+          privateKey: uint8array,
+          publicKey: generatePublicKey(uint8array),
+        }
+
+        return new BasicWallet(keyPair)
       } else {
         throw new Error('No PEM found')
       }
@@ -98,11 +145,16 @@ export class BasicWallet extends WalletBase {
     }    
   }
 
-  protected async _sign(rawTx: Buffer): Promise<string> {
-    return this._account.sign(rawTx)
+  protected async _sign(rawTx: Buffer | Uint8Array): Promise<string> {
+    if (!this._keyPair.privateKey) {
+      throw new Error('Key pair corruption, cannot sign message')
+    }
+    const sig = sign(rawTx, this._keyPair.privateKey)
+    return Buffer.from(sig).toString('hex')
   }
 
   protected _getAddress(): string {
-    return this._account.address()
+    const words = bech32.toWords(Buffer.from(this._keyPair.publicKey))
+    return bech32.encode('erd', words)
   }
 }

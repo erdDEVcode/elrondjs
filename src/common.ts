@@ -135,6 +135,10 @@ export interface ContractQueryResult {
    */
   returnCode: string,
   /**
+   * The parsed return data.
+   */
+  returnDataParsed: any[],
+  /**
    * Amount of gas which would be refunded had this been a transaction.
    */
   gasRefund: number,
@@ -142,50 +146,6 @@ export interface ContractQueryResult {
    * Amount of gas that would be unused had this been a transaction.
    */
   gasRemaining: number,
-}
-
-/**
- * Represents the different possible types of a query result.
- */
-export enum ContractQueryResultDataType {
-  /**
-   * Boolean value of type `Boolean`.
-   */
-  BOOLEAN,
-  /**
-   * Integer of type `Number`.
-   */
-  INT,
-  /**
-   * Big integer of type `BigVal`.
-   */
-  BIG_INT,
-  /**
-   * Hex string of type `string`.
-   */
-  HEX,
-  /**
-   * Generic string of type `string`.
-   */
-  STRING,
-  /**
-   * Bech32 address of type `string`.
-   */
-  ADDRESS,
-}
-
-/**
- * Represents options for parsing a contract query result.
- */
-export interface ContractQueryResultParseOptions {
-  /**
-   * The desired type to parse the result as.
-   */
-  type: ContractQueryResultDataType,
-  /**
-   * The index into the `returnData` array at which th result lies.
-   */
-  index?: number,
 }
 
 /**
@@ -422,12 +382,6 @@ export interface TransactionOptions {
    */
   gasLimit?: number,
   /**
-   * Options to pass to the transaction signer.
-   *
-   * The specific structure of this value will depend on the signer being used.
-   */
-  meta?: object,
-  /**
    * The provider to use.
    */
   provider?: Provider,
@@ -435,6 +389,12 @@ export interface TransactionOptions {
    * The transaction signer to use.
    */
   signer?: Signer,
+  /**
+   * Options to pass to the transaction signer.
+   *
+   * The specific structure of this value will depend on the signer being used.
+   */
+  meta?: object,
 }
 
 /**

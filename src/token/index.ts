@@ -5,9 +5,7 @@ import {
   TokenConfig,
   TokenInfo,
   TransactionReceipt,
-  ContractQueryResultDataType,
   ContractQueryResult,
-  ContractQueryResultParseOptions,
 } from '../common'
 
 
@@ -124,6 +122,12 @@ class TokenTransferBuilder extends TransactionBuilder {
     return this._receiver
   }
 }
+
+
+interface TokenOptions {
+
+}
+
 
 
 

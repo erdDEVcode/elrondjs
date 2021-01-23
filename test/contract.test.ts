@@ -49,7 +49,7 @@ describe('contracts', () => {
 
   it('can be invoked', async () => {
     await receipt.contract.invoke('add', [numberToHex(5)], {
-      gasLimit: 2000000
+      gasLimit: 5000000
     })
 
     const sum2 = parseQueryResult(await receipt.contract.query('getSum'), {
@@ -85,7 +85,7 @@ describe('contracts', () => {
     await token.balanceOf(sender).should.eventually.eq('10000')
 
     await receipt.contract.invoke('add', [numberToHex(5)], {
-      gasLimit: 2500000,
+      gasLimit: 5000000,
       esdt: {
         id: token.id,
         value: new BigVal(1),

@@ -1,4 +1,3 @@
-import Elrond from '@elrondnetwork/elrond-core-js'
 import { Provider, SignedTransaction, Transaction, Wallet } from '../common'
 
 /**
@@ -15,23 +14,40 @@ export abstract class WalletBase implements Wallet {
     const { nonce: nonceOnChain } = await provider.getAddress(address)
     const { chainId } = await provider.getNetworkConfig()
 
-    const t = new Elrond.transaction(
-      tx.nonce || nonceOnChain,
-      address,
-      tx.receiver,
-      tx.value.toMinScale().toString(),
-      parseInt(`${tx.gasPrice!}`, 10),
-      parseInt(`${tx.gasLimit!}`, 10),
-      tx.data,
-      chainId,
-      1
-    )
+    const txData: any = {
+      nonce: tx.nonce || nonceOnChain,
+      value: tx.value.toMinScale().toString(),
+      receiver: tx.receiver,
+      sender: address,
+    }
 
-    const s = t.prepareForSigning()
-    t.signature = await this._sign(s)
+    if (tx.gasPrice) {
+      txData.gasPrice = parseInt(`${tx.gasPrice!}`, 10)
+    }
 
-    const st = t.prepareForNode()
-    return st        
+    if (tx.gasLimit) {
+      txData.gasLimit = parseInt(`${tx.gasLimit!}`, 10)
+    }
+
+    if (tx.data) {
+      txData.data = Buffer.from(tx.data).toString('base64')
+    }
+
+    txData.chainID = chainId
+    txData.version = 1
+
+    const signature = await this._sign(Buffer.from(JSON.stringify(txData)))
+
+    const ret = {
+      ...txData,
+      data: tx.data ? txData.data : '',
+      signature,
+    }
+
+    ret.chainId = ret.chainID
+    delete ret.chainID
+
+    return ret
   }
 
   /**
@@ -39,7 +55,7 @@ export abstract class WalletBase implements Wallet {
    * 
    * @param rawTx The raw transaction.
    */
-  protected abstract _sign(rawTx: Buffer): Promise<string>
+  protected abstract _sign(rawTx: Buffer | Uint8Array): Promise<string>
 
   /**
    * Get the bech32 address of this wallet.

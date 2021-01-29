@@ -3,7 +3,15 @@ import ElrondLedgerApp from '@elrondnetwork/hw-app-elrond'
 
 import { WalletBase } from "./base"
 
-export const withLedgerAppInstance = async (transport: any, cb: Function) => {
+/**
+ * @internal
+ */
+const SERIALIZATION_PREFIX = '[LedgerWallet]'
+
+/**
+ * @internal
+ */
+const withLedgerAppInstance = async (transport: any, cb: Function) => {
   try {
     const ledgerTransportInstance: Transport = await new Promise(async (resolve, reject) => {
       const timer = setTimeout(() => {
@@ -96,6 +104,7 @@ export class LedgerWallet extends WalletBase {
     return Object.values(this._activeTransportInstances).length > 0
   }
 
+
   /**
    * Connect to the Ledger hardware wallet.
    * 
@@ -150,6 +159,10 @@ export class LedgerWallet extends WalletBase {
 
   protected _getAddress(): string {
     return this._address
+  }
+
+  public serialize(): string {
+    return `${SERIALIZATION_PREFIX}${JSON.stringify(this._address)}`
   }
 }
 

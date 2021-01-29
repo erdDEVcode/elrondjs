@@ -1,7 +1,7 @@
 import { BigVal } from 'bigval'
 import { WALLETS } from 'narya'
 
-import { BasicWallet, ProxyProvider } from '../src'
+import { BasicWallet, LedgerWallet, ProxyProvider } from '../src'
 import { expect, PROXY_ENDPOINT } from './utils'
 
 const MNEMONIC = 'fringe dry little minor note hundred lottery garment announce space throw captain seven slim common piece blame battle void pistol diagram melody phone mother'
@@ -79,5 +79,37 @@ MWYyNGMyOTE4MWU2Mzg4ODIyOGRjODFjYTYwZDY5ZTE=
       version: 1,
       signature: '54c5b4bddf71812f811bdbae1751fae628d30e4f246875d429f127ec34128cba25d31a369f23193ea890b9ef59092336fcff1618e7120cce43f6c8b2d1a59108'
     })
+  })
+
+  it('can be serlialized and deserialized', async () => {
+    const w = BasicWallet.fromMnemonic(MNEMONIC)
+
+    const s = w.serialize()
+
+    expect(typeof s).to.equal('string')
+    expect(!!s).to.be.true
+
+    expect(BasicWallet.canDeserialize(s)).to.be.true
+    expect(BasicWallet.canDeserialize('test')).to.be.false
+
+    const w2 = BasicWallet.fromSerialized(s)
+    expect(w2).to.be.instanceOf(BasicWallet)
+
+    w2.address().should.eql('erd1tcylw3y4s2y43xps0cjuvgql2zld9aze4c7ku6ekhezu39tpag5q6audht')
+  })
+
+  it('will fail to deserialize corrupted data', async () => {
+    const w = BasicWallet.fromMnemonic(MNEMONIC)
+
+    const s = w.serialize()
+
+    const s1 = `d${s}`
+    const s2 = `${s}d`
+
+    expect(BasicWallet.canDeserialize(s1)).to.be.false
+    expect(BasicWallet.canDeserialize(s2)).to.be.true
+
+    expect(() => BasicWallet.fromSerialized(s1)).to.throw
+    expect(() => BasicWallet.fromSerialized(s2)).to.throw
   })
 })

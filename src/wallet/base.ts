@@ -61,4 +61,9 @@ export abstract class WalletBase implements Wallet {
    * Get the bech32 address of this wallet.
    */
   protected abstract _getAddress(): string
+
+  /**
+   * Serialize this wallet.
+   */
+  public abstract serialize(): string
 }

@@ -20,12 +20,34 @@ const MNEMONIC_LEN = 256
 
 
 /**
+ * @internal
+ */
+const SERIALIZATION_PREFIX = '[BasicWallet]'
+
+
+/**
  * Generate a random mnemonic.
  */
 export const generateMnemonic = (): string => {
   return bip39.generateMnemonic(MNEMONIC_LEN)
 }
 
+
+/**
+ * @internal
+ */
+const uint8ArrayToBase64 = (a: Uint8Array) => {
+  const dec = new TextDecoder()
+  return Buffer.from(a).toString('base64')
+}
+
+
+/**
+ * @internal
+ */
+const base64ToUint8Array = (a: string) => {
+  return Uint8Array.from(Buffer.from(a, 'base64'))
+}
 
 
 
@@ -51,7 +73,41 @@ export class BasicWallet extends WalletBase {
     return BasicWallet.fromMnemonic(generateMnemonic())
   }
 
+  /**
+   * Get whether this class can deserialize the given wallet data.
+   * 
+   * @return {boolean} true if can, false if cannot.
+   */
+  public static canDeserialize(data: string): boolean {
+    return data.startsWith(SERIALIZATION_PREFIX)
+  }
 
+
+  /**
+   * Load a wallet from previously serialized wallet data.
+   * 
+   * @throws {Error} If loading fails.
+   */
+  public static fromSerialized(data: string): BasicWallet {
+    try {
+      if (!data.startsWith(SERIALIZATION_PREFIX)) {
+        throw new Error('Bad serialized data')
+      }
+
+      const ret = JSON.parse(data.substr(SERIALIZATION_PREFIX.length))
+
+      const keyPair: KeyPair = {
+        privateKey: base64ToUint8Array(ret.privateKey),
+        publicKey: base64ToUint8Array(ret.publicKey),
+      }
+
+      return new BasicWallet(keyPair)
+    } catch (err) {
+      throw new Error(`Error restoring from serialized data: ${err.message}`)
+    }
+  }
+  
+  
   /**
    * Load a wallet using from a mnemonic.
    * 
@@ -156,5 +212,14 @@ export class BasicWallet extends WalletBase {
   protected _getAddress(): string {
     const words = bech32.toWords(Buffer.from(this._keyPair.publicKey))
     return bech32.encode('erd', words)
+  }
+
+  public serialize(): string {
+    const kps = {
+      privateKey: uint8ArrayToBase64(this._keyPair.privateKey),
+      publicKey: uint8ArrayToBase64(this._keyPair.publicKey),
+    }
+
+    return `${SERIALIZATION_PREFIX}${JSON.stringify(kps)}`
   }
 }

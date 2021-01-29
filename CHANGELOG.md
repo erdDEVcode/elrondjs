@@ -1,3 +1,10 @@
+# [2.6.0](https://github.com/erdDEVcode/elrondjs/compare/v2.5.0...v2.6.0) (2021-01-29)
+
+
+### Features
+
+* serialization of BasicWallet ([21f56e0](https://github.com/erdDEVcode/elrondjs/commit/21f56e065dbd2569e49d8222b6307226770cf3a0))
+
 # [2.5.0](https://github.com/erdDEVcode/elrondjs/compare/v2.4.1...v2.5.0) (2021-01-20)
 
 ## [2.4.1](https://github.com/erdDEVcode/elrondjs/compare/v2.4.0...v2.4.1) (2021-01-14)

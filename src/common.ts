@@ -53,9 +53,13 @@ export interface Address {
    */
   nonce: number,
   /**
+   * The DNS username which resolves to this address.
+   */
+  username?: string,
+  /**
    * The code, if any, at this address.
    */
-  code: string,
+  code?: string,
 }
 
 

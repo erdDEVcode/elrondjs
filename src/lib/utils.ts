@@ -110,6 +110,55 @@ export const hexStringToAddress = (hex: string): string => {
 }
 
 
+/**
+ * Get shard number for given address.
+ * @param address The address in bech32 format.
+ * @param numShards The no. of shards in the network.
+ * @return -1 if metachain, >=0 otherwise
+ */
+export const getShard = (address: string, numShards: number = 3): number => {
+  /* derived from https://github.com/ElrondNetwork/elrond-sdk/blob/721b587d849c0af659e3697ae3c06e084d9916d6/examples/shards.js */
+
+  const pubKey = Buffer.from(addressToHexString(address), "hex")
+
+  if (isMetachainAddress(pubKey)) {
+    return -1
+  }
+
+  const lastByteOfPubKey = pubKey[31]
+
+  let maskHigh = parseInt("11", 2);
+  let maskLow = parseInt("01", 2);
+
+  let shard = lastByteOfPubKey & 3
+  if (shard > numShards - 1) {
+    shard = lastByteOfPubKey & 1
+  }
+
+  return shard
+}
+
+
+/**
+ * Forked from https://github.com/ElrondNetwork/elrond-sdk/blob/721b587d849c0af659e3697ae3c06e084d9916d6/examples/shards.js
+ * @internal
+ */
+const isMetachainAddress = (pubKey: Buffer): boolean => {
+  let metachainPrefix = Buffer.from([0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+  let pubKeyPrefix = pubKey.slice(0, metachainPrefix.length)
+  if (pubKeyPrefix.equals(metachainPrefix)) {
+    return true
+  }
+
+  let zeroAddress = Buffer.alloc(32).fill(0)
+  if (pubKey.equals(zeroAddress)) {
+    return true
+  }
+
+  return false
+}
+
+
 
 /**
  * The NULL address in HEX format.

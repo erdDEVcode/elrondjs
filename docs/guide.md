@@ -179,6 +179,7 @@ This will return an `AddressInfo` object with the following structure:
 * `address` - bech32 format address 
 * `balance` - eGLD balance
 * `nonce` - next transaction nonce
+* `username` - the [Elrond DNS name](https://elrond.com/blog/elrond-distributed-name-service/) mapped to this addresss
 * `code` - bytecode at address (empty if not a smart contract address)
 
 

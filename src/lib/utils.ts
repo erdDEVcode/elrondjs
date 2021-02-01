@@ -111,12 +111,18 @@ export const hexStringToAddress = (hex: string): string => {
 
 
 /**
+ * Max no. of shards.
+ */
+export const NUM_SHARDS = 3
+
+
+/**
  * Get shard number for given address.
  * @param address The address in bech32 format.
  * @param numShards The no. of shards in the network.
  * @return -1 if metachain, >=0 otherwise
  */
-export const getShard = (address: string, numShards: number = 3): number => {
+export const getShard = (address: string, numShards: number = NUM_SHARDS): number => {
   /* derived from https://github.com/ElrondNetwork/elrond-sdk/blob/721b587d849c0af659e3697ae3c06e084d9916d6/examples/shards.js */
 
   const pubKey = Buffer.from(addressToHexString(address), "hex")

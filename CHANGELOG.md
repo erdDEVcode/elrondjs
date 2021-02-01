@@ -1,3 +1,10 @@
+# [2.7.0](https://github.com/erdDEVcode/elrondjs/compare/v2.6.0...v2.7.0) (2021-02-01)
+
+
+### Features
+
+* add support for usernames/herotags resolution and registration ([18389f3](https://github.com/erdDEVcode/elrondjs/commit/18389f3d37aefcd68c6c6d3a2d4005a30dcd3406))
+
 # [2.6.0](https://github.com/erdDEVcode/elrondjs/compare/v2.5.0...v2.6.0) (2021-01-29)
 
 

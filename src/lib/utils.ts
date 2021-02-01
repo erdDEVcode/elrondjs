@@ -110,6 +110,80 @@ export const hexStringToAddress = (hex: string): string => {
 }
 
 
+/**
+ * Max no. of shards.
+ */
+export const NUM_SHARDS = 3
+
+
+/**
+ * Get shard number for given address.
+ * 
+ * @param address The address in bech32 format.
+ * @param numShards The no. of shards in the network.
+ * @return -1 if metachain, >=0 otherwise
+ */
+export const getAddressShard = (address: string, numShards: number = NUM_SHARDS): number => {
+  const buf = Buffer.from(addressToHexString(address), "hex")
+  return getShard(buf, numShards)
+}
+
+
+/**
+ * Get shard number for given DNS name.
+ * 
+ * @param name The DNS name.
+ * @param numShards The no. of shards in the network.
+ * @return -1 if metachain, >=0 otherwise
+ */
+export const getNameShard = (name: string, numShards: number = NUM_SHARDS): number => {
+  const buf = keccak(Buffer.from(name, 'utf8'))
+  return buf[31]
+}
+
+
+
+
+/**
+ * @internal
+ */
+const getShard = (buf: Buffer, numShards: number = NUM_SHARDS): number => {
+  /* derived from https://github.com/ElrondNetwork/elrond-sdk/blob/721b587d849c0af659e3697ae3c06e084d9916d6/examples/shards.js */
+  if (isMetachainAddress(buf)) {
+    return -1
+  }
+
+  const lastByteOfPubKey = buf[31]
+
+  let shard = lastByteOfPubKey & 3
+  if (shard > numShards - 1) {
+    shard = lastByteOfPubKey & 1
+  }
+
+  return shard
+}
+
+
+/**
+ * Forked from https://github.com/ElrondNetwork/elrond-sdk/blob/721b587d849c0af659e3697ae3c06e084d9916d6/examples/shards.js
+ * @internal
+ */
+const isMetachainAddress = (pubKey: Buffer): boolean => {
+  let metachainPrefix = Buffer.from([0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+  let pubKeyPrefix = pubKey.slice(0, metachainPrefix.length)
+  if (pubKeyPrefix.equals(metachainPrefix)) {
+    return true
+  }
+
+  let zeroAddress = Buffer.alloc(32).fill(0)
+  if (pubKey.equals(zeroAddress)) {
+    return true
+  }
+
+  return false
+}
+
+
 
 /**
  * The NULL address in HEX format.

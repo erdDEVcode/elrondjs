@@ -93,6 +93,10 @@ export class ProxyProvider extends Api implements Provider {
    * @throws {Error} If response indicates a failure or parsing failed.
    */
   protected _parseResponse(data: any, errorMsg: string): any {
+    if (!data) {
+      throw new Error(`No data returned`)
+    }
+
     if (data.error || (data.code !== 'successful')) {
       throw new Error(`${errorMsg}: ${data.error || data.code || 'internal error'}`)
     }

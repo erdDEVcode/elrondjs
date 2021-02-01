@@ -76,7 +76,7 @@ export const parseTokenInfo = (result: ContractQueryResult, options: ContractQue
 /**
  * Address of metachain contract which handles ESDT token issuance and all other operations.
  */
-const METACHAIN_TOKEN_CONTRACT = 'erd1qqqqqqqqqqqqqqqpqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzllls8a5w6u'
+export const METACHAIN_TOKEN_CONTRACT = 'erd1qqqqqqqqqqqqqqqpqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzllls8a5w6u'
 
 
 /**

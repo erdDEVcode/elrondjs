@@ -179,6 +179,7 @@ This will return an `AddressInfo` object with the following structure:
 * `address` - bech32 format address 
 * `balance` - eGLD balance
 * `nonce` - next transaction nonce
+* `username` - the [username ("herotag")](https://elrond.com/blog/elrond-distributed-name-service/) mapped to this addresss
 * `code` - bytecode at address (empty if not a smart contract address)
 
 
@@ -662,6 +663,53 @@ For example, transferring tokens to another address:
 ```js
 await token.transfer('recipient bech32 address', '100')  // send 100 tokens to recipient
 ```
+
+## Usernames ("herotags")
+
+The [Elrond DNS](https://elrond.com/blog/elrond-distributed-name-service/) system powers the user-friendly usernames you see throughout (also known as _herotags_ in [Maiar](https://maiar.com)). 
+
+Finding the username mapped to an address is done via the `Proxy.getAddress()` call, as shown earlier. In this section we will outline how to resolve from the username back to the address as well as how to register new usernames.
+
+### Resolving a name
+
+To resolve an existing username to the address it is mapped to:
+
+```js
+const { Dns } = require('elrondjs')
+
+const dns = new Dns({ 
+  provider: // Provider instance,
+  signer: // Signer instance,
+  sender: // sender address
+})
+
+// let's resolve the `testname` username:
+const address = await dns.resolve('testname.elrond')
+```
+
+Notice that username must always be specified in the format `XXX.elrond`, otherwise the call will fail.
+
+### Registering a name
+
+To register a new username against an address the transaction must be signed by that address, i.e. you can only a register a username 
+for the address you are sending from:
+
+```js
+const { Dns } = require('elrondjs')
+
+const dns = new Dns({ 
+  provider: // Provider instance,
+  signer: // Signer instance,
+  sender: // sender address <- the username will resolve to this address
+})
+
+// let's register the `funkytown` username/herotag for the sender address
+await dns.register('funkytown.elrond')
+```
+
+And that's it! If you now try to resolve `funkytown.elrond` it should give you the sender address.
+
+_NOTE: If the above call fails then it's likely because `funkytown` has already been registered, so feel free to try other words._
 
 ## Typescript support
 

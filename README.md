@@ -21,13 +21,11 @@ Features:
 
 ## Installation
 
-_Note: Node 12 or above is required to use elrondjs_
-
 ```
 npm install --save elrondjs
 ```
 
-For [React Native](https://reactnative.dev/) you will need to use a [shim](https://www.npmjs.com/package/react-native-crypto).
+_Note: If using with [React Native](https://reactnative.dev/) you will need to use a [shim](https://www.npmjs.com/package/react-native-crypto)._
 
 ## Usage
 

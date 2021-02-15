@@ -27,6 +27,8 @@ _Note: Node 12 or above is required to use elrondjs_
 npm install --save elrondjs
 ```
 
+For [React Native](https://reactnative.dev/) you will need to use a [shim](https://www.npmjs.com/package/react-native-crypto).
+
 ## Usage
 
 **Example - Claiming rewards from the Mainnet delegation contract**

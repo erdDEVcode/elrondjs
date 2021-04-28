@@ -4,6 +4,8 @@
 
 # elrond.js
 
+**DEPRECATED - ElrondJS is now deprecated and no longer maintained. Please use [@elrondnetwork/erdjs](https://www.npmjs.com/package/@elrondnetwork/erdjs) instead.**
+
 [![NPM module](https://badge.fury.io/js/elrondjs.svg)](https://badge.fury.io/js/elrondjs)
 [![Join the community](https://img.shields.io/badge/Chat%20on-Telegram-brightgreen.svg?color=0088cc)](https://t.me/erdDEV)
 [![Follow on Twitter](https://img.shields.io/twitter/url/http/shields.io.svg?style=social&label=Follow&maxAge=2592000)](https://twitter.com/erd_dev)

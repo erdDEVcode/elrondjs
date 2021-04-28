@@ -23,11 +23,11 @@ Features:
 
 ## Installation
 
-_Note: Node 12 or above is required to use elrondjs_
-
 ```
 npm install --save elrondjs
 ```
+
+_Note: If using with [React Native](https://reactnative.dev/) you will need to use a [shim](https://www.npmjs.com/package/react-native-crypto)._
 
 ## Usage
 
@@ -36,18 +36,19 @@ npm install --save elrondjs
 ```js
 import { Contract, ProxyProvider, BasicWallet } from 'elrondjs'
 
-(async () => {
+;(async () => {
   // create connection to network
   const proxy = new ProxyProvider('https://api.elrond.com')
 
   // load wallet
-  const wallet = BasicWallet.fromMnemonic('YOUR MNEMONIC HERE'),
+  const wallet = BasicWallet.fromMnemonic('YOUR MNEMONIC HERE')
 
   // create contract interface
   // and tell it to use our provider and wallet
   const c = await Contract.at('erd1qqqqqqqqqqqqqpgqxwakt2g7u9atsnr03gqcgmhcv38pt7mkd94q6shuwt', {
     provider: proxy,
     signer: wallet,
+    sender: wallet.address(),
   })
 
   // make the claim!

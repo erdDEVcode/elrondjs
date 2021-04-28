@@ -435,7 +435,7 @@ If the smart contract method you are querying makes use of the caller address an
 ```js
 await contract.query('method name', [ /* method arguments */ ], { 
   provider: ..., // another Provider instance to use instead of the one passed in to the constructor
-  caller: 'erd1343....',
+  sender: 'erd1343....',
   value: new BigVal(100, 'coins'), // 100 eGLD
 })
 ```

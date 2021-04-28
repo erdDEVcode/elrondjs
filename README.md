@@ -13,7 +13,7 @@ Features:
 * Query the blockchain and work with smart contracts
 * Cross-platform: Node.js, Browser, Web workers and React Native.
 * Typescript definitions 🔥
-* Full [documentation](https://elrondjs.erd.dev)
+* Full [documentation](https://github.com/erdDEVcode/elrondjs/blob/master/docs/guide.md)
 
 ## Installation
 
@@ -51,8 +51,6 @@ import { Contract, ProxyProvider, BasicWallet } from 'elrondjs'
   })
 })()
 ```
-
-For usage and full documentation see https://elrondjs.erd.dev.
 
 ## Contributors guide
 

@@ -1,10 +1,4 @@
-<p align="center">
-  <img width="250" height="250" src="https://raw.githubusercontent.com/erdDEVcode/elrondjs/master/assets/logo.png">
-</p>
-
-# elrond.js
-
-**DEPRECATED - ElrondJS is now deprecated and no longer maintained. Please use [@elrondnetwork/erdjs](https://www.npmjs.com/package/@elrondnetwork/erdjs) instead.**
+# elrond.js: DEPRECATED - ElrondJS is now deprecated and no longer maintained. Please use [@elrondnetwork/erdjs](https://www.npmjs.com/package/@elrondnetwork/erdjs) instead.**
 
 [![NPM module](https://badge.fury.io/js/elrondjs.svg)](https://badge.fury.io/js/elrondjs)
 [![Join the community](https://img.shields.io/badge/Chat%20on-Telegram-brightgreen.svg?color=0088cc)](https://t.me/erdDEV)
